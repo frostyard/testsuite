@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+.behave_tags
+results.json
