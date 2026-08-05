@@ -37,10 +37,3 @@ Feature: The shipped toolchain is present and runnable
   Scenario: The container toolchain is present
     Then "podman" is on PATH
     And "distrobox" is on PATH
-
-  Scenario: Flatpak is present
-    Then "flatpak" is on PATH
-
-  Scenario: Frostyard tooling is present
-    Then "chairlift" is on PATH
-    And "igloo" is on PATH

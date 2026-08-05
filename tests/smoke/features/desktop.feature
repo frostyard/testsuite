@@ -22,3 +22,14 @@ Feature: Graphical variants ship a working desktop stack
 
   Scenario: The terminal emulator is installed
     Then "ptyxis" is on PATH
+
+  Scenario: Flatpak is installed
+    # cayo ships no flatpak — application delivery on the server image is
+    # containers and sysexts only.
+    Then "flatpak" is on PATH
+
+  Scenario: Desktop frostyard tooling is installed
+    # chairlift (system management) and igloo (dev environments) are part of
+    # the desktop experience and are absent from the headless image.
+    Then "chairlift" is on PATH
+    And "igloo" is on PATH
