@@ -7,24 +7,43 @@ from behave import then  # type: ignore[import-untyped]
 from tests.shared import host
 
 
-# Units that cannot succeed inside a nested container and whose failure says
+# Units that cannot succeed under the container harness and whose failure says
 # nothing about the image.
 #
-# This list is empirical, not predicted: it is exactly the set observed failing
-# on a clean `podman run --systemd=always` of ghcr.io/frostyard/snow:latest.
-# Keep it that way. Every entry carries the reason it cannot pass, and anything
-# not listed here fails the suite — a speculative allowlist is how a real
-# regression gets tolerated forever.
+# This list is empirical, not predicted: every entry was observed failing on a
+# real run and carries the reason it cannot pass. Anything not listed fails the
+# suite — a speculative allowlist is how a real regression gets tolerated
+# forever, so do not add a unit here without first seeing it fail.
+#
+# The set is harness-scoped, not image-scoped: it is the union across the
+# environments the suite runs in (a plain `podman run` on a workstation and the
+# lab's privileged pod), because those differ in seccomp, capabilities, and
+# which paths the harness pins. A unit listed here is NOT excused on real
+# hardware — that is what the VM lane exists to check.
 EXPECTED_CONTAINER_FAILURES = {
-    # binfmt_misc is a kernel filesystem the container is not permitted to
-    # mount; the host owns it.
+    # ── genuinely impossible in any container ────────────────────────────────
+    # binfmt_misc is a kernel filesystem the container may not mount; the host
+    # owns it.
     "proc-sys-fs-binfmt_misc.automount",
-    # Reads /proc/pressure via the host kernel's PSI, which is not namespaced.
+    # Reads PSI via /proc/pressure, which is not namespaced.
     "low-memory-monitor.service",
+    # Needs RLIMIT_RTPRIO and SCHED_RESET_ON_FORK. Available under a plain
+    # privileged podman run, refused under the lab pod's seccomp profile.
+    "rtkit-daemon.service",
     # Reconciles the bootc shim second-stage bootloader against the ESP. A
-    # container has no ESP and no boot partition, so this cannot apply. On a
-    # real install this unit MUST succeed — that is the VM lane's job.
+    # container has no ESP and no boot partition. On a real install this unit
+    # MUST succeed — that is the VM lane's job.
     "snosi-bootc-bootloader-reconcile.service",
+
+    # ── induced by the harness, not by the image ─────────────────────────────
+    # The lab bind-mounts /etc/resolv.conf read-only so apt has working DNS
+    # inside the nested container. systemd-resolved cannot manage a read-only
+    # resolv.conf and fails, taking its two Varlink sockets with it. Removing
+    # the mount would fix these three and break every apt-dependent step, so
+    # the trade is deliberate.
+    "systemd-resolved.service",
+    "systemd-resolved-monitor.socket",
+    "systemd-resolved-varlink.socket",
 }
 
 
