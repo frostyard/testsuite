@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline-present:
+    name: Pipeline present
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm CI is wired
+        run: |
+          echo "CI/CD pipeline is configured for this repository."
+          echo "Runtime behave suites are exercised by frostyard/lab against live images."
