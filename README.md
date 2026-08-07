@@ -111,3 +111,8 @@ regression gets tolerated forever; if a unit stops failing, delete its entry.
 a package installed to pass is testing something the image does not ship.
 
 **Tag `@wip` for anything that should not gate.** The lab excludes it by default.
+
+**Coverage is gated, not chased.** `codecov.yml` at the repo root sets the
+thresholds: a project-level drop of more than 2% fails, and new code is expected
+at 80%. Feature files are excluded — they are the specification, not the code
+under measurement.

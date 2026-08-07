@@ -1,0 +1,33 @@
+# Coverage gate for the frostyard testsuite.
+#
+# Coverage here means suite coverage, not line coverage of this repo's own
+# Python: the probes run inside the image under test, so what matters is that
+# the shared helpers and step definitions stay exercised by the feature files.
+# The thresholds below gate a drop, they do not chase a number.
+
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 1
+  round: down
+  range: "60...90"
+
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
+        if_ci_failed: error
+    patch:
+      default:
+        target: 80%
+        threshold: 0%
+        if_ci_failed: error
+
+ignore:
+  - "tests/**/features/**/*.feature"
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: true
