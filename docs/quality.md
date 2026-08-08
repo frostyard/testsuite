@@ -12,6 +12,7 @@ stale.
 | Signal | Quality expectation | Live source |
 | --- | --- | --- |
 | Repository CI | The latest `main` run and every pull request pass. | [CI workflow runs](https://github.com/frostyard/testsuite/actions/workflows/ci.yml) |
+| Nightly compliance | Policy assets, Ruff correctness checks, Python compilation, feature discovery, and CodeQL pass each night; scheduled failures are tracked as bug issues. | [Nightly workflow runs](https://github.com/frostyard/testsuite/actions/workflows/nightly-compliance.yml) |
 | Runtime suites | Behave suites pass against published images; failures are investigated in the lab that exercised the image. | [frostyard/lab workflow runs](https://github.com/frostyard/lab/actions) |
 | Coverage | Project coverage does not fall by more than 2%; changed Python code reaches 80%. | [Codecov dashboard](https://codecov.io/gh/frostyard/testsuite) and [gate configuration](../codecov.yml) |
 | Pull request acceptance | Accepted and closed-unmerged pull requests are reported monthly with their counts and acceptance percentage. | [Metric definition](metrics.md), [merged PRs](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Amerged), and [closed, unmerged PRs](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Aclosed+-is%3Amerged) |
