@@ -48,5 +48,7 @@ note that tag negation is `~@wip`, not the `not @wip` form from behave 1.3.
 ## Submitting your change
 
 Open a pull request describing what you changed and why, and include the
-`behave` output showing the affected scenarios passing. Keep changes focused —
+`behave` output showing the affected scenarios passing. Before requesting
+review, check the change against the
+[pull request review rubric](docs/review-rubric.md). Keep changes focused —
 prefer several small, reviewable pull requests over one large one.
