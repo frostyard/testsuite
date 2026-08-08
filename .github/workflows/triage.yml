@@ -1,0 +1,38 @@
+name: Issue triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  label-by-title:
+    name: Label by title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply matching label
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          set -euo pipefail
+
+          case "${ISSUE_TITLE,,}" in
+            '[acmm '*) label="acmm" ;;
+            '[bug]'*) label="bug" ;;
+            '[docs]'*|'[documentation]'*) label="documentation" ;;
+            '[feature]'*) label="enhancement" ;;
+            '[question]'*) label="question" ;;
+            *)
+              echo "No label mapping found for issue title: $ISSUE_TITLE"
+              exit 0
+              ;;
+          esac
+
+          gh issue edit "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --add-label "$label"
