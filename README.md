@@ -4,6 +4,9 @@ BDD suites that validate [snosi](https://github.com/frostyard/snosi) bootc
 images. Run by [`frostyard/lab`](https://github.com/frostyard/lab) on every
 published image digest.
 
+Live CI, coverage, runtime validation, and review signals are collected in the
+[quality dashboard](docs/quality.md).
+
 ---
 
 ## The execution model
