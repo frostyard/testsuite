@@ -14,6 +14,18 @@
 - [ ] Documentation update
 - [ ] Other (please describe):
 
+## Change Risk
+
+<!-- Select the highest applicable tier and explain why. -->
+
+See the [change risk tiers](https://github.com/frostyard/testsuite/blob/main/docs/risk-tiers.md).
+
+- [ ] Low
+- [ ] Medium
+- [ ] High
+
+**Rationale:**
+
 ## How Has This Been Tested?
 
 <!-- Describe the tests you ran to verify your changes. -->
