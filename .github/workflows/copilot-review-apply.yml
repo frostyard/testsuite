@@ -1,0 +1,111 @@
+name: Apply Copilot review feedback
+
+on:
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: Open pull request with Copilot review feedback
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: copilot-review-apply-${{ github.event.pull_request.number || inputs.pull_number }}
+  cancel-in-progress: false
+
+jobs:
+  apply-review:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.review.user.login == 'copilot-pull-request-reviewer[bot]' &&
+       github.event.pull_request.state == 'open' &&
+       github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.COPILOT_AGENT_TOKEN }}
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pull_number }}
+      REVIEW_ID: ${{ github.event.review.id }}
+    steps:
+      - name: Ask Copilot to apply review findings
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "::error::COPILOT_AGENT_TOKEN is not configured; see docs/copilot-review-apply.md"
+            exit 1
+          fi
+
+          pr_json="$(
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"
+          )"
+
+          if [[ "$(jq -r '.state' <<<"$pr_json")" != "open" ]]; then
+            echo "::error::Pull request $PR_NUMBER is not open"
+            exit 1
+          fi
+
+          if [[ "$(jq -r '.draft' <<<"$pr_json")" == "true" ]]; then
+            echo "Pull request $PR_NUMBER is a draft; skipping review application"
+            exit 0
+          fi
+
+          if [[ -z "$REVIEW_ID" ]]; then
+            REVIEW_ID="$(
+              gh api --paginate \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/reviews" |
+                jq -rs '
+                  flatten
+                  | map(select(.user.login == "copilot-pull-request-reviewer[bot]"))
+                  | sort_by(.submitted_at)
+                  | last
+                  | .id // empty
+                '
+            )"
+          fi
+
+          if [[ -z "$REVIEW_ID" ]]; then
+            echo "::error::Pull request $PR_NUMBER has no Copilot review"
+            exit 1
+          fi
+
+          finding_count="$(
+            gh api --paginate \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/reviews/$REVIEW_ID/comments" |
+              jq -s 'flatten | length'
+          )"
+
+          if [[ "$finding_count" -eq 0 ]]; then
+            echo "Copilot review $REVIEW_ID has no inline findings"
+            exit 0
+          fi
+
+          marker="<!-- copilot-review-apply:$REVIEW_ID -->"
+          if gh api --paginate \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" |
+            jq -ers --arg marker "$marker" \
+              'flatten | any(.[]; .body | contains($marker))' >/dev/null; then
+            echo "Copilot review $REVIEW_ID was already handed off"
+            exit 0
+          fi
+
+          gh pr comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body "$marker
+          @copilot Apply the actionable, unresolved findings from Copilot review $REVIEW_ID to this pull request. Follow the repository instructions and [review rubric](https://github.com/$GITHUB_REPOSITORY/blob/main/docs/review-rubric.md), run focused validation, and push the fixes to this pull request branch. Do not make unrelated changes."
+
+          echo "Handed $finding_count Copilot review finding(s) to the coding agent"
