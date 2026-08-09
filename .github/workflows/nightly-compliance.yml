@@ -1,0 +1,155 @@
+name: Nightly compliance
+
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  repository-compliance:
+    name: Repository compliance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify required quality assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required_paths=(
+            AGENTS.md
+            CONTRIBUTING.md
+            README.md
+            .github/copilot-instructions.md
+            .github/ISSUE_TEMPLATE/bug_report.md
+            .github/ISSUE_TEMPLATE/feature_request.md
+            .github/pull_request_template.md
+            .github/workflows/ci.yml
+            codecov.yml
+            docs/metrics.md
+            docs/quality.md
+            docs/review-rubric.md
+            ruff.toml
+            tests/shared/host.py
+            tests/shared/steps.py
+          )
+
+          failed=0
+          for path in "${required_paths[@]}"; do
+            if [[ ! -e "$path" ]]; then
+              echo "::error file=$path::Required quality asset is missing"
+              failed=1
+            fi
+          done
+
+          feature_count="$(find tests -type f -name '*.feature' -print | wc -l)"
+          if [[ "$feature_count" -eq 0 ]]; then
+            echo "::error::No Behave feature files were found"
+            failed=1
+          fi
+
+          if [[ "$failed" -ne 0 ]]; then
+            exit 1
+          fi
+
+          echo "Found ${#required_paths[@]} required assets and $feature_count feature files"
+
+      - name: Lint Python
+        uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89 # v4.1.0
+        with:
+          args: check --select E,F
+          version: "0.16.2"
+
+      - name: Compile Python
+        run: python3 -m compileall -q tests
+
+      - name: Install Behave
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends python3-behave
+
+      - name: Validate feature discovery
+        env:
+          PYTHONPATH: .
+        run: >-
+          /usr/bin/python3 -m behave tests/smoke/features/
+          --dry-run
+          --no-capture
+          --tags ~@wip
+
+  codeql:
+    name: Python security scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          languages: python
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          category: /language:python
+
+  report-failure:
+    name: Report scheduled failure
+    needs: [repository-compliance, codeql]
+    if: >-
+      always() &&
+      github.event_name == 'schedule' &&
+      (needs.repository-compliance.result == 'failure' ||
+       needs.codeql.result == 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_TITLE: "[Nightly compliance] Scheduled validation failed"
+    steps:
+      - name: Create or update failure issue
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          issue_number="$(
+            gh issue list \
+              --repo "$GITHUB_REPOSITORY" \
+              --state open \
+              --search "\"$ISSUE_TITLE\" in:title" \
+              --json number,title \
+              --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" |
+              head -n 1
+          )"
+
+          body="The scheduled nightly compliance scan failed.
+
+          Run: $run_url
+          Commit: $GITHUB_SHA
+
+          Review the failed job, fix the regression, and close this issue after a successful nightly run."
+
+          if [[ -n "$issue_number" ]]; then
+            gh issue comment "$issue_number" \
+              --repo "$GITHUB_REPOSITORY" \
+              --body "$body"
+            echo "Updated failure issue $issue_number"
+          else
+            gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$ISSUE_TITLE" \
+              --label bug \
+              --body "$body"
+          fi
