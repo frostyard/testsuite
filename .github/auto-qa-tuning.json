@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "rolling_window_days": 30,
+  "minimum_sample_size": 10,
+  "signals": {
+    "pr_acceptance_rate": "docs/metrics.md#pull-request-acceptance",
+    "repository_ci": "docs/quality.md#signals",
+    "runtime_suite_failures": "docs/quality.md#signals",
+    "coverage": "codecov.yml",
+    "open_defects": "docs/quality.md#signals"
+  },
+  "thresholds": {
+    "relative_regression": 0.1,
+    "consecutive_improved_windows_to_relax": 2
+  },
+  "actions": {
+    "pr_acceptance_rate": [
+      "clarify recurring expectations in CONTRIBUTING.md or the pull request template"
+    ],
+    "repository_ci": [
+      "add or document the missing targeted local check"
+    ],
+    "runtime_suite_failures": [
+      "add a focused regression scenario or narrow the affected empirical allowlist"
+    ],
+    "coverage": [
+      "add scenarios that exercise the changed helper or step path"
+    ],
+    "open_defects": [
+      "promote recurring image-visible defects into focused gating scenarios"
+    ]
+  },
+  "guardrails": {
+    "insufficient_data": "hold",
+    "required_checks": "never_relax",
+    "coverage_gates": "never_relax",
+    "security_checks": "never_relax",
+    "wip_exceptions": "explicit_only",
+    "container_failure_allowlist": "empirical_only",
+    "changes_via_pull_request": true
+  }
+}
