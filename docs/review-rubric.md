@@ -12,6 +12,9 @@ applicable gate passes and all blocking findings are resolved.
   by installing an extra dependency.
 - Container-invisible claims about the kernel, graphical seat, disk layout,
   Secure Boot, TPM/LUKS, or A/B updates are left to the lab VM lanes.
+- The pull request selects the highest applicable
+  [change risk tier](risk-tiers.md), and its review evidence meets that tier's
+  requirements.
 - The diff is focused; unrelated scenarios, helpers, and generated files are
   not changed.
 
