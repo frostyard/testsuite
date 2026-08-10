@@ -3,7 +3,7 @@
   "rolling_window_days": 30,
   "minimum_sample_size": 10,
   "signals": {
-    "pr_acceptance_rate": "docs/metrics.md#pull-request-acceptance",
+    "pr_acceptance_rate": "docs/metrics/README.md#pull-request-acceptance",
     "repository_ci": "docs/quality.md#signals",
     "runtime_suite_failures": "docs/quality.md#signals",
     "coverage": "codecov.yml",

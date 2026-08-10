@@ -5,7 +5,8 @@ images. Run by [`frostyard/lab`](https://github.com/frostyard/lab) on every
 published image digest.
 
 Live CI, coverage, runtime validation, and review signals are collected in the
-[quality dashboard](docs/quality.md). Eligible same-repository pull requests
+[quality dashboard](docs/quality.md) and linked from the auditable
+[public metrics index](docs/metrics/). Eligible same-repository pull requests
 also receive a least-privilege [advisory Claude review](docs/claude-code-review.md);
 fork pull requests remain outside that secret-bearing workflow.
 

@@ -16,7 +16,7 @@ stale.
 | Nightly compliance | Repository policy, Ruff correctness checks, Python compilation, feature discovery, and CodeQL pass each night; scheduled failures are tracked as bug issues. | [Nightly workflow runs](https://github.com/frostyard/testsuite/actions/workflows/nightly-compliance.yml) |
 | Runtime suites | Behave suites pass against published images; failures are investigated in the lab that exercised the image. | [frostyard/lab workflow runs](https://github.com/frostyard/lab/actions) |
 | Coverage | Project coverage does not fall by more than 2%; changed Python code reaches 80%. | [Codecov dashboard](https://codecov.io/gh/frostyard/testsuite) and [gate configuration](../codecov.yml) |
-| Pull request acceptance | Accepted and closed-unmerged pull requests are reported monthly with their counts and acceptance percentage. | [Metric definition](metrics.md), [merged PRs](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Amerged), and [closed, unmerged PRs](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Aclosed+-is%3Amerged) |
+| Pull request acceptance | Accepted and closed-unmerged pull requests are reported monthly with their counts and acceptance percentage. | [Metric definition](metrics/), [merged PRs](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Amerged), and [closed, unmerged PRs](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Aclosed+-is%3Amerged) |
 | Open defects | Regressions and test defects are triaged rather than hidden by broad allowlists. | [Open bug reports](https://github.com/frostyard/testsuite/issues?q=is%3Aissue+is%3Aopen+label%3Abug) |
 | Advisory AI review | Eligible same-repository pull requests receive least-privilege Claude feedback; comments remain untrusted until human verification. | [Workflow](https://github.com/frostyard/testsuite/actions/workflows/claude-code-review.yml) and [trust/setup contract](claude-code-review.md) |
 
@@ -42,5 +42,5 @@ visible in test output and are not equivalent to passing coverage.
 - **After each published image:** inspect the corresponding lab run and triage
   unexpected Behave failures.
 - **Monthly:** report pull request acceptance using the UTC-period definition in
-  [project metrics](metrics.md), and review open defects and stale `@wip`
+  [public metrics](metrics/), and review open defects and stale `@wip`
   scenarios.
