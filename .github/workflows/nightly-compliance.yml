@@ -17,48 +17,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Test repository policy evaluator
+        run: python3 -m unittest policies.test_check_repository
+
       - name: Verify required quality assets
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          required_paths=(
-            AGENTS.md
-            CONTRIBUTING.md
-            README.md
-            .github/copilot-instructions.md
-            .github/ISSUE_TEMPLATE/bug_report.md
-            .github/ISSUE_TEMPLATE/feature_request.md
-            .github/pull_request_template.md
-            .github/workflows/ci.yml
-            codecov.yml
-            docs/metrics.md
-            docs/quality.md
-            docs/review-rubric.md
-            ruff.toml
-            tests/shared/host.py
-            tests/shared/steps.py
-          )
-
-          failed=0
-          for path in "${required_paths[@]}"; do
-            if [[ ! -e "$path" ]]; then
-              echo "::error file=$path::Required quality asset is missing"
-              failed=1
-            fi
-          done
-
-          feature_count="$(find tests -type f -name '*.feature' -print | wc -l)"
-          if [[ "$feature_count" -eq 0 ]]; then
-            echo "::error::No Behave feature files were found"
-            failed=1
-          fi
-
-          if [[ "$failed" -ne 0 ]]; then
-            exit 1
-          fi
-
-          echo "Found ${#required_paths[@]} required assets and $feature_count feature files"
+        run: python3 policies/check_repository.py
 
       - name: Lint Python
         uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89 # v4.1.0
@@ -67,7 +30,7 @@ jobs:
           version: "0.16.2"
 
       - name: Compile Python
-        run: python3 -m compileall -q tests
+        run: python3 -m compileall -q policies tests
 
       - name: Install Behave
         run: |

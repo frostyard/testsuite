@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "required_paths": [
+    "AGENTS.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    ".github/copilot-instructions.md",
+    ".github/ISSUE_TEMPLATE/bug_report.md",
+    ".github/ISSUE_TEMPLATE/feature_request.md",
+    ".github/pull_request_template.md",
+    ".github/workflows/ci.yml",
+    "codecov.yml",
+    "docs/metrics.md",
+    "docs/quality.md",
+    "docs/review-rubric.md",
+    "policies/README.md",
+    "policies/check_repository.py",
+    "policies/repository.json",
+    "policies/test_check_repository.py",
+    "ruff.toml",
+    "tests/shared/host.py",
+    "tests/shared/steps.py"
+  ],
+  "required_globs": [
+    {
+      "pattern": "tests/**/*.feature",
+      "minimum": 1
+    }
+  ]
+}

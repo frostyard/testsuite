@@ -13,6 +13,15 @@ jobs:
     name: Pipeline present
     runs-on: ubuntu-latest
     steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Test repository policy evaluator
+        run: python3 -m unittest policies.test_check_repository
+
+      - name: Enforce repository policy
+        run: python3 policies/check_repository.py
+
       - name: Confirm CI is wired
         run: |
           echo "CI/CD pipeline is configured for this repository."
