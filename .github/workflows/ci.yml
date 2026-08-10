@@ -16,8 +16,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Test repository policy evaluator
-        run: python3 -m unittest policies.test_check_repository
+      - name: Test repository policy and workflow contracts
+        run: python3 -m unittest discover -s policies -p 'test_*.py'
 
       - name: Enforce repository policy
         run: python3 policies/check_repository.py

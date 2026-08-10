@@ -72,7 +72,10 @@ Agent-authored pull requests must state their scope, risk, validation performed,
 and any validation that could not be run. Reviewers apply the
 [PR review rubric](review-rubric.md), including its execution-model and
 verification gates, and use the live signals in the
-[quality dashboard](quality.md).
+[quality dashboard](quality.md). The [Claude review workflow](claude-code-review.md)
+may add advisory findings to eligible same-repository pull requests, but its
+secret-bearing job skips forks and its output cannot approve a change or replace
+human review, repository CI, or runtime evidence.
 
 Exceptions require a pull request documenting the rationale, duration, and
 compensating controls, plus maintainer approval. An agent cannot approve its own

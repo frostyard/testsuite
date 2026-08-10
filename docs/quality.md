@@ -18,6 +18,7 @@ stale.
 | Coverage | Project coverage does not fall by more than 2%; changed Python code reaches 80%. | [Codecov dashboard](https://codecov.io/gh/frostyard/testsuite) and [gate configuration](../codecov.yml) |
 | Pull request acceptance | Accepted and closed-unmerged pull requests are reported monthly with their counts and acceptance percentage. | [Metric definition](metrics.md), [merged PRs](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Amerged), and [closed, unmerged PRs](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Aclosed+-is%3Amerged) |
 | Open defects | Regressions and test defects are triaged rather than hidden by broad allowlists. | [Open bug reports](https://github.com/frostyard/testsuite/issues?q=is%3Aissue+is%3Aopen+label%3Abug) |
+| Advisory AI review | Eligible same-repository pull requests receive least-privilege Claude feedback; comments remain untrusted until human verification. | [Workflow](https://github.com/frostyard/testsuite/actions/workflows/claude-code-review.yml) and [trust/setup contract](claude-code-review.md) |
 
 ## Reading the dashboard
 
@@ -28,7 +29,9 @@ to distinguish them. Coverage status follows `codecov.yml`, which is the source
 of truth for thresholds.
 
 Reviewers should apply the [pull request review rubric](review-rubric.md) before
-approval. Non-gating scenarios must carry `@wip`, and expected nested-container
+approval. Claude review is advisory evidence, not approval and not a substitute
+for repository CI or live image validation. Non-gating scenarios must carry
+`@wip`, and expected nested-container
 failures must remain narrowly scoped and documented. These exceptions are
 visible in test output and are not equivalent to passing coverage.
 
