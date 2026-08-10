@@ -122,3 +122,9 @@ a package installed to pass is testing something the image does not ship.
 thresholds: a project-level drop of more than 2% fails, and new code is expected
 at 80%. Feature files are excluded — they are the specification, not the code
 under measurement.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

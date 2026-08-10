@@ -54,3 +54,6 @@ Open a pull request describing what you changed and why, and include the
 review, check the change against the
 [pull request review rubric](docs/review-rubric.md). Keep changes focused —
 prefer several small, reviewable pull requests over one large one.
+
+By contributing, you agree that your contributions will be licensed under the
+project's [MIT License](LICENSE).
