@@ -20,12 +20,14 @@ conventions this project follows.
 ## Making changes
 
 1. Fork the repository and create a branch for your change.
-2. Add or update `.feature` files and step implementations under the
-   appropriate `tests/<suite>/features` directory. Follow the copyable
-   [scenario-authoring example](docs/authoring-scenarios.md) when creating a
-   suite's first feature or adding step vocabulary. Keep step vocabulary in
-   `tests/shared/steps.py` and probe helpers in `tests/shared/host.py` where
-   possible, rather than duplicating logic per suite.
+2. Add or update existing `.feature` files under `tests/smoke/features/`. The
+   lab also reserves `system` and `sysext` for their documented contracts; follow
+   the copyable [scenario-authoring example](docs/authoring-scenarios.md) when
+   creating either suite's first feature or adding step vocabulary.
+   `tests/e2e/` is an ACMM discovery marker, not a Behave suite. Keep step
+   vocabulary in `tests/shared/steps.py` and probe helpers in
+   `tests/shared/host.py` where possible, rather than duplicating logic per
+   suite.
 3. Tag anything that should not gate the pipeline with `@wip`; the lab
    excludes it by default.
 4. If you add an entry to `EXPECTED_CONTAINER_FAILURES`, make it empirical
