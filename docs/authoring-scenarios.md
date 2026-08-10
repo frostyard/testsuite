@@ -7,20 +7,25 @@ image under test, not against it over SSH.
 
 ## 1. Choose the suite
 
-Put the scenario under the suite whose contract it describes:
+Add scenarios for the currently implemented suite under
+`tests/smoke/features/`. The lab also reserves two suite names for contracts
+that do not belong in `smoke`:
 
 - `smoke` for basic boot, identity, and shipped-tool checks;
 - `system` for bootc and composefs behavior visible from the running image;
 - `sysext` for systemd-sysext and updex behavior.
 
-The Lab pipeline already accepts all three suite names. A suite becomes runnable
-when its `tests/<suite>/features/` directory contains a feature; there is no
-separate registry to edit.
+Only `smoke` is populated today. If a new scenario establishes one of the
+reserved contracts, create `tests/system/features/` or
+`tests/sysext/features/` as appropriate; the Lab pipeline already accepts both
+names, so there is no separate registry to edit. Do not put Behave scenarios in
+`tests/e2e/`: that directory is only an ACMM discovery marker, and `e2e` is not
+a Lab suite name.
 
 ## 2. Write the feature
 
-For example, the first `system` feature could reuse the shared command
-vocabulary to check the image's shipped Debian tooling:
+For example, the first feature in the reserved `system` suite could reuse the
+shared command vocabulary to check the image's shipped Debian tooling:
 
 ```gherkin
 # tests/system/features/package_tooling.feature

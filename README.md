@@ -41,22 +41,25 @@ Those need a real boot and belong to the lab's VM lane.
 
 ```
 tests/
+├── e2e/
+│   └── .gitkeep    marker for ACMM discovery; not a Behave suite
 ├── shared/
 │   ├── host.py     probe helpers: run(), have(), os_release(), failed_units()
 │   └── steps.py    step vocabulary shared by every suite
-├── smoke/features/
-│   ├── boot.feature        boots to usable systemd, no unexpected failures
-│   ├── identity.feature    os-release provenance and sysext level
-│   ├── toolchain.feature   shipped binaries are present and runnable
-│   ├── desktop.feature     graphical stack (skipped on headless variants)
-│   ├── environment.py
-│   └── steps/
-├── system/features/   (empty — bootc/composefs contracts)
-└── sysext/features/   (empty — systemd-sysext + updex behaviour)
+└── smoke/features/
+    ├── boot.feature        boots to usable systemd, no unexpected failures
+    ├── identity.feature    os-release provenance and sysext level
+    ├── toolchain.feature   shipped binaries are present and runnable
+    ├── desktop.feature     graphical stack (skipped on headless variants)
+    ├── environment.py
+    └── steps/
 ```
 
-A suite directory with features in it is automatically runnable; the lab's
-pipeline already accepts `smoke`, `system`, and `sysext`. For a copyable feature,
+`smoke` is the only Behave suite currently present. The lab's pipeline also
+reserves `system` and `sysext`; adding features under either
+`tests/<suite>/features/` makes that suite runnable without a separate registry
+change. `tests/e2e/` is only a tracked marker for ACMM discovery: it contains no
+Behave features, and `e2e` is not a lab suite name. For a copyable feature,
 step-registration shim, shared-step implementation, tagging rules, and the
 required validation command, see [Authoring a testsuite
 scenario](docs/authoring-scenarios.md).
