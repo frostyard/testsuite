@@ -53,7 +53,10 @@ tests/
 ```
 
 A suite directory with features in it is automatically runnable; the lab's
-pipeline already accepts `smoke`, `system`, and `sysext`.
+pipeline already accepts `smoke`, `system`, and `sysext`. For a copyable feature,
+step-registration shim, shared-step implementation, tagging rules, and the
+required validation command, see [Authoring a testsuite
+scenario](docs/authoring-scenarios.md).
 
 ---
 
