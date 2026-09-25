@@ -140,8 +140,41 @@ def test_failed_units_ignores_indented_lines(monkeypatch, make_result):
     assert host.failed_units() == ["alpha.service"]
 
 
-def test_failed_units_returns_empty_list_when_systemctl_fails(monkeypatch, make_result):
-    result = make_result(returncode=1, stdout="stale.service loaded failed failed Stale")
-    monkeypatch.setattr(host, "run", Mock(return_value=result))
+def test_failed_units_returns_empty_list_on_successful_empty_output(monkeypatch, make_result):
+    monkeypatch.setattr(host, "run", Mock(return_value=make_result(stdout="")))
 
     assert host.failed_units() == []
+
+
+@pytest.mark.parametrize(
+    ("returncode", "stdout", "stderr", "diagnostic"),
+    [
+        (1, "stale.service loaded failed failed Stale", "", "stale.service"),
+        (7, "", "Failed to connect to bus", "Failed to connect to bus"),
+    ],
+)
+def test_failed_units_raises_on_systemctl_failure(
+    monkeypatch, make_result, returncode, stdout, stderr, diagnostic
+):
+    result = make_result(returncode=returncode, stdout=stdout, stderr=stderr)
+    monkeypatch.setattr(host, "run", Mock(return_value=result))
+
+    with pytest.raises(RuntimeError) as error:
+        host.failed_units()
+
+    message = str(error.value)
+    assert "systemctl list-units --failed --no-legend --plain --no-pager" in message
+    assert f"exited {returncode}" in message
+    assert diagnostic in message
+
+
+def test_failed_units_bounds_failure_diagnostics(monkeypatch, make_result):
+    result = make_result(returncode=1, stdout="x" * 10000, stderr="y" * 10000)
+    monkeypatch.setattr(host, "run", Mock(return_value=result))
+
+    with pytest.raises(RuntimeError) as error:
+        host.failed_units()
+
+    message = str(error.value)
+    assert "stdout" in message and "stderr" in message
+    assert len(message) < 1000

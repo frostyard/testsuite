@@ -232,6 +232,17 @@ def test_no_unexpected_failures_reports_new_and_tolerated_units(monkeypatch, con
     assert f"Tolerated (known container limitations):\n  {known}" in message
 
 
+def test_no_unexpected_failures_propagates_inventory_error(monkeypatch, context):
+    monkeypatch.setattr(
+        smoke_steps.host,
+        "failed_units",
+        Mock(side_effect=RuntimeError("failed-unit inventory unavailable")),
+    )
+
+    with pytest.raises(RuntimeError, match="failed-unit inventory unavailable"):
+        smoke_steps.step_no_unexpected_failures(context)
+
+
 def test_os_release_equals_accepts_matching_value(monkeypatch, context):
     monkeypatch.setattr(
         smoke_steps.host,

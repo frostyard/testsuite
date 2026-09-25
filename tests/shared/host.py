@@ -106,7 +106,12 @@ def failed_units() -> list[str]:
     """Names of units in the failed state."""
     result = run("systemctl list-units --failed --no-legend --plain --no-pager")
     if not result.ok:
-        return []
+        raise RuntimeError(
+            "systemctl list-units --failed --no-legend --plain --no-pager "
+            f"exited {result.returncode}: "
+            f"stderr={result.stderr.strip()[:200]!r}; "
+            f"stdout={result.stdout.strip()[:200]!r}"
+        )
     return [
         line.split()[0]
         for line in result.stdout.splitlines()
