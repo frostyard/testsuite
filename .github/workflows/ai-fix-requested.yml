@@ -30,15 +30,37 @@ jobs:
       ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
-      - name: Validate request and assign issue
+      - name: Check Copilot assignment credentials
+        id: credentials
         shell: bash
         run: |
           set -euo pipefail
 
-          if [[ -z "${GH_TOKEN:-}" ]]; then
+          if [[ -n "${GH_TOKEN:-}" ]]; then
+            echo "available=true" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "### Copilot assignment skipped"
+            echo
+            echo "Issue #$ISSUE_NUMBER was not assigned because the repository secret \`COPILOT_AGENT_TOKEN\` is not configured."
+            echo "Configure the secret, then manually replay this workflow for the issue."
+          } >>"$GITHUB_STEP_SUMMARY"
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             echo "::error::COPILOT_AGENT_TOKEN is not configured; see docs/ai-fix-workflow.md"
             exit 1
           fi
+
+          echo "::warning title=Copilot assignment skipped::COPILOT_AGENT_TOKEN is not configured; see docs/ai-fix-workflow.md"
+          echo "available=false" >>"$GITHUB_OUTPUT"
+
+      - name: Validate request and assign issue
+        if: steps.credentials.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
 
           issue_json="$(
             gh api \
