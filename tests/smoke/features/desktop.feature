@@ -29,7 +29,8 @@ Feature: Graphical variants ship a working desktop stack
     Then "flatpak" is on PATH
 
   Scenario: Desktop frostyard tooling is installed
-    # chairlift (system management) and igloo (dev environments) are part of
-    # the desktop experience and are absent from the headless image.
+    # chairlift (system management) is part of the desktop experience and is
+    # absent from the headless image. igloo is deliberately not asserted:
+    # snosi removed it from Snow (snosi#515) and it may return, so this
+    # scenario stays neutral about it.
     Then "chairlift" is on PATH
-    And "igloo" is on PATH
