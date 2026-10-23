@@ -23,9 +23,22 @@ before it expires. See GitHub's
 [Copilot cloud agent API documentation](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-via-the-api)
 for the current authentication and permission requirements.
 
+## Missing-secret behavior
+
+An automatic label event cannot repair missing repository configuration. If
+`COPILOT_AGENT_TOKEN` is absent, the workflow records a warning and job summary,
+then skips the assignment API call. This keeps expected configuration gaps from
+creating repeated failed runs while making it explicit that no assignment
+occurred.
+
+A manual replay still fails when the secret is absent. This prevents a
+recovery run from appearing successful without assigning Copilot. After an
+administrator configures the secret, use the manual replay to process any issue
+whose label event was skipped.
+
 ## Manual replay
 
-If an event fails after the label is applied, open **Actions**, select
-**AI fix requested**, choose **Run workflow**, and enter the issue number. The
-manual path applies the same open-state, label, and duplicate-assignment checks
-as the label event.
+If a label event is skipped because configuration is missing, or fails after
+the label is applied, open **Actions**, select **AI fix requested**, choose
+**Run workflow**, and enter the issue number. The manual path applies the same
+open-state, label, and duplicate-assignment checks as the label event.
