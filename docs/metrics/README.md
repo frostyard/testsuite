@@ -15,7 +15,6 @@ images and environments.
 | Coverage | [Codecov dashboard](https://codecov.io/gh/frostyard/testsuite) | Project and patch coverage interpreted under [`codecov.yml`](../../codecov.yml). |
 | Pull-request acceptance | [Merged pull requests](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Amerged) and [closed, unmerged pull requests](https://github.com/frostyard/testsuite/pulls?q=is%3Apr+is%3Aclosed+-is%3Amerged) | Monthly ratio defined below; review with rejection reasons and feedback. |
 | Open defects | [Open bug reports](https://github.com/frostyard/testsuite/issues?q=is%3Aissue+is%3Aopen+label%3Abug) | Regressions and test defects awaiting triage or correction. |
-| AI review activity | [Claude review workflow runs](https://github.com/frostyard/testsuite/actions/workflows/claude-code-review.yml) | Advisory feedback on eligible same-repository pull requests; comments require human verification. |
 | Quality-gate definitions | [Quality dashboard](../quality.md) | Canonical expectations, sources, and review cadence for each signal. |
 
 These links expose source evidence rather than a copied snapshot that can go
