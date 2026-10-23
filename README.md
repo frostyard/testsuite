@@ -96,11 +96,12 @@ podman exec -e PYTHONPATH=/testsuite -e SNOSI_VARIANT=snow probe \
 
 | Variable | Meaning |
 |---|---|
-| `SNOSI_VARIANT` | `snow`, `snowfield`, `cayo`, … Gates variant-specific scenarios. |
+| `SNOSI_VARIANT` | `snow`, `snowfield`, `sundog`, `floe`, … Gates variant-specific scenarios. |
 | `SNOSI_IMAGE` | Full pinned reference of the image under test. Logged, not asserted on. |
 
-`GRAPHICAL_VARIANTS` in `tests/shared/host.py` decides which variants get the
-desktop scenarios; everything else skips them. One suite runs unmodified across
+`DESKTOPS` in `tests/shared/host.py` maps each graphical variant to the desktop
+it ships (`gnome` or `kde`). Variants not in it skip the desktop scenarios, and
+desktop-specific scenarios skip on a variant that ships the other desktop. One suite runs unmodified across
 the whole image family.
 
 ---

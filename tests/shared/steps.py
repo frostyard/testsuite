@@ -125,3 +125,13 @@ def step_require_graphical(context):
         context.scenario.skip(
             f"variant {host.VARIANT!r} is headless; graphical assertions do not apply"
         )
+
+
+@given('the image ships the "{desktop}" desktop')
+def step_require_desktop(context, desktop):
+    shipped = host.desktop()
+    if shipped != desktop:
+        context.scenario.skip(
+            f"variant {host.VARIANT!r} ships {shipped or 'no'} desktop; "
+            f"{desktop} assertions do not apply"
+        )

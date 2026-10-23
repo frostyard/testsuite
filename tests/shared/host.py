@@ -23,9 +23,16 @@ from dataclasses import dataclass
 VARIANT = os.environ.get("SNOSI_VARIANT", "snow")
 IMAGE = os.environ.get("SNOSI_IMAGE", "<unknown>")
 
-# Variants that ship a graphical session. cayo is the headless server image, so
-# desktop expectations must not be asserted against it.
-GRAPHICAL_VARIANTS = {"snow", "snowfield", "snow-ab", "snowfield-ab"}
+# The desktop each graphical variant ships. floe is the headless server image,
+# so it is absent and desktop expectations are never asserted against it.
+DESKTOPS = {
+    "snow": "gnome",
+    "snowfield": "gnome",
+    "snow-ab": "gnome",
+    "snowfield-ab": "gnome",
+    "sundog": "kde",
+}
+GRAPHICAL_VARIANTS = frozenset(DESKTOPS)
 
 
 @dataclass(frozen=True)
@@ -91,6 +98,11 @@ def os_release() -> dict[str, str]:
 
 def is_graphical() -> bool:
     return VARIANT in GRAPHICAL_VARIANTS
+
+
+def desktop() -> str | None:
+    """The desktop the variant under test ships, or None when headless."""
+    return DESKTOPS.get(VARIANT)
 
 
 def unit_is_enabled(unit: str) -> bool:

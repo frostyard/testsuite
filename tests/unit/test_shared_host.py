@@ -95,7 +95,8 @@ def test_os_release_returns_empty_mapping_when_file_is_missing(monkeypatch):
     [
         ("snow", True),
         ("snowfield-ab", True),
-        ("cayo", False),
+        ("sundog", True),
+        ("floe", False),
         ("unknown", False),
     ],
 )
@@ -103,6 +104,21 @@ def test_is_graphical_uses_variant_allowlist(monkeypatch, variant, expected):
     monkeypatch.setattr(host, "VARIANT", variant)
 
     assert host.is_graphical() is expected
+
+
+@pytest.mark.parametrize(
+    ("variant", "expected"),
+    [
+        ("snow", "gnome"),
+        ("snowfield", "gnome"),
+        ("sundog", "kde"),
+        ("floe", None),
+    ],
+)
+def test_desktop_names_the_shipped_desktop(monkeypatch, variant, expected):
+    monkeypatch.setattr(host, "VARIANT", variant)
+
+    assert host.desktop() == expected
 
 
 @pytest.mark.parametrize(

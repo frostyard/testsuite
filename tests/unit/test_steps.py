@@ -209,6 +209,36 @@ def test_graphical_requirement_skips_headless_variant(monkeypatch, context):
     )
 
 
+def test_desktop_requirement_allows_matching_desktop(monkeypatch, context):
+    monkeypatch.setattr(shared_steps.host, "desktop", Mock(return_value="kde"))
+
+    shared_steps.step_require_desktop(context, "kde")
+
+    context.scenario.skip.assert_not_called()
+
+
+def test_desktop_requirement_skips_other_desktop(monkeypatch, context):
+    monkeypatch.setattr(shared_steps.host, "desktop", Mock(return_value="kde"))
+    monkeypatch.setattr(shared_steps.host, "VARIANT", "sundog")
+
+    shared_steps.step_require_desktop(context, "gnome")
+
+    context.scenario.skip.assert_called_once_with(
+        "variant 'sundog' ships kde desktop; gnome assertions do not apply"
+    )
+
+
+def test_desktop_requirement_skips_headless_variant(monkeypatch, context):
+    monkeypatch.setattr(shared_steps.host, "desktop", Mock(return_value=None))
+    monkeypatch.setattr(shared_steps.host, "VARIANT", "floe")
+
+    shared_steps.step_require_desktop(context, "kde")
+
+    context.scenario.skip.assert_called_once_with(
+        "variant 'floe' ships no desktop; kde assertions do not apply"
+    )
+
+
 def test_no_unexpected_failures_accepts_allowlisted_units(monkeypatch, context):
     known = next(iter(smoke_steps.EXPECTED_CONTAINER_FAILURES))
     monkeypatch.setattr(smoke_steps.host, "failed_units", Mock(return_value=[known]))
