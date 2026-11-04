@@ -76,3 +76,50 @@ def test_feature_discovery_accepts_one_plain_scenario(tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert "feature discovery: 1 features, 1 scenarios selected" in result.stdout
+
+
+def test_feature_discovery_counts_outline_rows_not_background_or_wip(tmp_path):
+    features = tmp_path / "features"
+    write_feature(
+        features / "mixed.feature",
+        "Feature: mixed\n"
+        "  Background:\n"
+        "    Given a plain step\n"
+        "\n"
+        "  Scenario: plain\n"
+        "    Given a plain step\n"
+        "\n"
+        "  Scenario Outline: rows <n>\n"
+        "    Given a plain step\n"
+        "    Examples:\n"
+        "      | n |\n"
+        "      | 1 |\n"
+        "      | 2 |\n"
+        "\n"
+        "  @wip\n"
+        "  Scenario: excluded\n"
+        "    Given a plain step\n",
+    )
+    write_steps(features / "steps" / "steps.py")
+
+    result = run_checker(features)
+
+    assert result.returncode == 0, result.stderr
+    assert "feature discovery: 1 features, 3 scenarios selected" in result.stdout
+
+
+def test_discover_rejects_unknown_scenario_status(tmp_path, monkeypatch):
+    sys.path.insert(0, str(CHECKER.parent))
+    import check_feature_discovery
+
+    def fake_run(command, **kwargs):
+        output = Path(command[command.index("-o") + 1])
+        output.write_text('[{"elements": [{"type": "scenario"}]}]', encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(check_feature_discovery.subprocess, "run", fake_run)
+    (tmp_path / "features").mkdir()
+
+    _, _, error = check_feature_discovery.discover(tmp_path / "features")
+
+    assert error == "unexpected scenario status: None"

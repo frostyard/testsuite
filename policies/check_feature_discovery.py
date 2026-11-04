@@ -55,10 +55,16 @@ def discover(features_dir: Path) -> tuple[int, int, str | None]:
             if not isinstance(feature, dict):
                 continue
             for element in feature.get("elements", []):
-                if not isinstance(element, dict):
+                if not isinstance(element, dict) or element.get("type") != "scenario":
                     continue
-                if element.get("type") == "scenario" and element.get("status") != "skipped":
+                status = element.get("status")
+                if status == "untested":
                     scenarios += 1
+                elif status != "skipped":
+                    # A dry-run marks a selected scenario "untested" and an
+                    # excluded one "skipped"; anything else is not a dry-run
+                    # result we understand, so fail closed.
+                    return features, scenarios, f"unexpected scenario status: {status!r}"
 
         return features, scenarios, None
 
