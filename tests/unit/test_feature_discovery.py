@@ -108,6 +108,24 @@ def test_feature_discovery_counts_outline_rows_not_background_or_wip(tmp_path):
     assert "feature discovery: 1 features, 3 scenarios selected" in result.stdout
 
 
+def test_feature_discovery_counts_a_scenario_without_steps(tmp_path):
+    # behave 1.2.6 reports a selected step-less scenario as "passed" in a dry-run.
+    features = tmp_path / "features"
+    write_feature(
+        features / "empty.feature",
+        "Feature: empty\n"
+        "  Scenario: full\n"
+        "    Given a plain step\n"
+        "\n"
+        "  Scenario: no steps\n",
+    )
+    write_steps(features / "steps" / "steps.py")
+
+    result = run_checker(features)
+
+    assert result.returncode == 0, result.stderr
+    assert "feature discovery: 1 features, 2 scenarios selected" in result.stdout
+
 def test_discover_rejects_unknown_scenario_status(tmp_path, monkeypatch):
     sys.path.insert(0, str(CHECKER.parent))
     import check_feature_discovery
