@@ -45,11 +45,7 @@ jobs:
       - name: Validate feature discovery
         env:
           PYTHONPATH: .
-        run: >-
-          /usr/bin/python3 -m behave tests/smoke/features/
-          --dry-run
-          --no-capture
-          --tags ~@wip
+        run: /usr/bin/python3 policies/check_feature_discovery.py tests/smoke/features/
 
   codeql:
     name: Python security scan

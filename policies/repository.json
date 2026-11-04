@@ -14,9 +14,11 @@
     "docs/quality.md",
     "docs/review-rubric.md",
     "policies/README.md",
+    "policies/check_feature_discovery.py",
     "policies/check_repository.py",
     "policies/repository.json",
     "policies/test_check_repository.py",
+    "policies/test_feature_discovery.py",
     "ruff.toml",
     "tests/shared/host.py",
     "tests/shared/steps.py"

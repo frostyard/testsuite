@@ -32,6 +32,11 @@ jobs:
           PYTHONPATH: .
         run: /usr/bin/python3 -m pytest -q tests/unit
 
+      - name: Validate feature discovery
+        env:
+          PYTHONPATH: .
+        run: /usr/bin/python3 policies/check_feature_discovery.py tests/smoke/features/
+
       - name: Confirm CI is wired
         run: |
           echo "CI/CD pipeline is configured for this repository."
