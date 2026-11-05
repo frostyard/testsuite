@@ -57,6 +57,27 @@ FIRST_LOGIN_PROGRAMS = (
     "snow-first-setup",
 )
 
+# The keys the canonical first-login entry may carry, and the prefixes of the
+# localized Name/Comment keys it may also carry. Every other key (TryExec,
+# OnlyShowIn, NotShowIn, Hidden, AutostartCondition, X-GNOME-Autostart-*,
+# X-KDE-*, ...) can stop GNOME from starting it; copied from snosi.
+CANONICAL_KEYS = frozenset(
+    {
+        "Type",
+        "Name",
+        "GenericName",
+        "Comment",
+        "Exec",
+        "Icon",
+        "Terminal",
+        "NoDisplay",
+        "StartupNotify",
+        "Categories",
+        "Version",
+    }
+)
+CANONICAL_LOCALIZED = ("Name[", "GenericName[", "Comment[")
+
 
 @dataclass(frozen=True)
 class Result:
@@ -138,60 +159,60 @@ def unit_is_enabled(unit: str) -> bool:
 
 
 def desktop_entry(path: str) -> dict[str, str]:
-    """Parse the `[Desktop Entry]` group of an XDG desktop entry file.
+    """Return the `[Desktop Entry]` group of a desktop entry file.
 
-    Keys in other groups are ignored, as are blank lines and comments. The
-    parse fails closed: a duplicate key, or a file with no `[Desktop Entry]`
-    group, raises ValueError rather than returning a partial entry, because a
-    desktop file we cannot read with confidence must not pass a scenario. A
-    missing file raises FileNotFoundError.
+    The whole file is validated, as snosi's first-login check does: every
+    non-blank, non-comment line must be a group header or a `key=value` line
+    inside a group, no group or key may appear twice, and a `[Desktop Entry]`
+    group must exist. Anything else raises ValueError with `path:line` in the
+    message: a desktop file we cannot read with confidence must not pass a
+    scenario. A missing file raises FileNotFoundError.
     """
-    entry: dict[str, str] = {}
-    seen_group = False
-    in_group = False
+    groups: dict[str, dict[str, str]] = {}
+    current: str | None = None
     with open(path, encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line or line.startswith("#"):
+        for number, line in enumerate(fh, start=1):
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
                 continue
-            if line.startswith("[") and line.endswith("]"):
-                in_group = line == "[Desktop Entry]"
-                if in_group:
-                    if seen_group:
-                        raise ValueError(f"{path}: [Desktop Entry] appears more than once")
-                    seen_group = True
+            if stripped.startswith("[") and stripped.endswith("]"):
+                current = stripped[1:-1]
+                if current in groups:
+                    raise ValueError(f"{path}:{number}: group [{current}] appears twice")
+                groups[current] = {}
                 continue
-            if not in_group:
-                continue
-            key, separator, value = line.partition("=")
-            if not separator:
-                continue
+            if current is None or "=" not in stripped:
+                raise ValueError(f"{path}:{number}: not a key=value line in a group")
+            key, value = stripped.split("=", 1)
             key = key.strip()
-            if key in entry:
-                raise ValueError(f"{path}: duplicate key {key!r} in [Desktop Entry]")
-            entry[key] = value.strip()
+            if key in groups[current]:
+                raise ValueError(f"{path}:{number}: key {key} appears twice in [{current}]")
+            groups[current][key] = value.strip()
 
-    if not seen_group:
+    if "Desktop Entry" not in groups:
         raise ValueError(f"{path}: no [Desktop Entry] group")
-    return entry
+    return groups["Desktop Entry"]
 
 
 def autostart_entries() -> list[str]:
     """Absolute paths of the XDG autostart entries present in the image.
 
-    A missing directory is not an error: a variant that ships no autostart
-    directory has no entries to run.
+    Every `*.desktop` name is listed, whether or not it is a readable file: a
+    dangling symlink is leftover packaging, and a caller that must read the
+    entry fails closed on it. A missing directory is not an error; a path that
+    exists but cannot be listed is.
     """
     entries: list[str] = []
     for directory in AUTOSTART_DIRS:
+        if not os.path.lexists(directory):
+            continue
         try:
             names = os.listdir(directory)
-        except (FileNotFoundError, NotADirectoryError):
-            continue
+        except OSError as error:
+            raise RuntimeError(f"cannot list {directory}: {error}") from error
         for name in names:
-            path = os.path.join(directory, name)
-            if name.endswith(".desktop") and os.path.isfile(path):
-                entries.append(path)
+            if name.endswith(".desktop"):
+                entries.append(os.path.join(directory, name))
     return sorted(entries)
 
 
@@ -227,17 +248,43 @@ def first_login_entries() -> list[str]:
     return entries
 
 
-def is_executable_file(path: str) -> bool:
-    """Is `path` a regular file (symlinks followed) with an execute bit?
+def starts_on_gnome(entry: dict[str, str]) -> bool:
+    """Would GNOME's autostart start this `[Desktop Entry]`?
 
-    `os.access` cannot answer this: the suite runs as root, which may execute
-    anything it can read. The mode bits are what the image ships.
+    Copied from snosi's first-login check, so the suite and the image agree on
+    what a trigger is.
+    """
+
+    def listed(key: str) -> list[str]:
+        return [value for value in entry.get(key, "").split(";") if value]
+
+    if entry.get("Type") != "Application":
+        return False
+    if entry.get("Hidden", "false").lower() == "true":
+        return False
+    if entry.get("X-GNOME-Autostart-enabled", "true").lower() == "false":
+        return False
+    # A present but empty OnlyShowIn allows no desktop at all.
+    if "OnlyShowIn" in entry and "GNOME" not in listed("OnlyShowIn"):
+        return False
+    if "GNOME" in listed("NotShowIn"):
+        return False
+    return True
+
+
+def is_executable_by_all(path: str) -> bool:
+    """Is `path` a regular file (symlinks followed) that every user may run?
+
+    A first-login entry runs as the desktop user, not as root, so the file
+    needs the execute bit for other, not only for owner or group. `os.access`
+    cannot answer this: the suite runs as root, which may execute anything it
+    can read.
     """
     try:
         mode = os.stat(path).st_mode
     except OSError:
         return False
-    return stat.S_ISREG(mode) and bool(mode & 0o111)
+    return stat.S_ISREG(mode) and bool(mode & stat.S_IXOTH)
 
 
 def failed_units() -> list[str]:

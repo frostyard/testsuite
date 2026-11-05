@@ -43,7 +43,7 @@ tests/
 │   └── .gitkeep    marker for ACMM discovery; not a Behave suite
 ├── shared/
 │   ├── host.py     probe helpers: run(), have(), os_release(), failed_units(),
-│   │               desktop_entry(), first_login_entries()
+│   │               desktop_entry(), first_login_entries(), starts_on_gnome()
 │   └── steps.py    step vocabulary shared by every suite
 └── smoke/features/
     ├── boot.feature        boots to usable systemd, no unexpected failures

@@ -62,7 +62,8 @@ Feature: Graphical variants ship a working desktop stack
     Given the image ships the "gnome" desktop
     Then the only first-login autostart entry is "/etc/xdg/autostart/org.frostyard.ChairLift.FirstRun.desktop"
     And the desktop entry "/etc/xdg/autostart/org.frostyard.ChairLift.FirstRun.desktop" sets "Exec" to "/usr/bin/chairlift-first-run"
-    And "/usr/bin/chairlift-first-run" is an executable file
+    And the desktop entry "/etc/xdg/autostart/org.frostyard.ChairLift.FirstRun.desktop" starts in a GNOME session
+    And "/usr/bin/chairlift-first-run" is an executable file for every user
 
   Scenario: SNOW First Setup is retired
     # The chairlift first run replaced snow-first-setup (snosi ADR-0028). A

@@ -196,6 +196,18 @@ def test_failed_units_bounds_failure_diagnostics(monkeypatch, make_result):
     assert len(message) < 1000
 
 
+CANONICAL_ENTRY = """\
+[Desktop Entry]
+Type=Application
+Name=ChairLift First Run
+Comment=Set up this machine
+Exec=/usr/bin/chairlift-first-run
+Icon=org.frostyard.ChairLift
+Terminal=false
+NoDisplay=true
+"""
+
+
 def write_entry(directory, name, text):
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / name
@@ -203,17 +215,22 @@ def write_entry(directory, name, text):
     return path
 
 
-def test_desktop_entry_parses_only_the_desktop_entry_group(tmp_path):
+def autostart_dir(monkeypatch, tmp_path):
+    directory = tmp_path / "autostart"
+    directory.mkdir()
+    monkeypatch.setattr(host, "AUTOSTART_DIRS", (str(directory),))
+    return directory
+
+
+# ── desktop_entry ─────────────────────────────────────────────────────────────
+
+
+def test_desktop_entry_parses_the_desktop_entry_group(tmp_path):
     path = write_entry(
         tmp_path,
         "app.desktop",
-        """\
-# a comment
-[Desktop Entry]
-  Type  =  Application
-Name=ChairLift First Run
-Exec=/usr/bin/chairlift-first-run
-
+        CANONICAL_ENTRY
+        + """
 [Desktop Action Open]
 Exec=/usr/bin/other
 """,
@@ -222,13 +239,65 @@ Exec=/usr/bin/other
     assert host.desktop_entry(str(path)) == {
         "Type": "Application",
         "Name": "ChairLift First Run",
+        "Comment": "Set up this machine",
         "Exec": "/usr/bin/chairlift-first-run",
+        "Icon": "org.frostyard.ChairLift",
+        "Terminal": "false",
+        "NoDisplay": "true",
     }
+
+
+def test_desktop_entry_strips_around_equals_and_ignores_comments(tmp_path):
+    path = write_entry(
+        tmp_path,
+        "app.desktop",
+        "# a comment\n[Desktop Entry]\n  Name  =  Spaced  \n\n   # indented comment\n",
+    )
+
+    assert host.desktop_entry(str(path)) == {"Name": "Spaced"}
 
 
 def test_desktop_entry_raises_for_a_missing_file(tmp_path):
     with pytest.raises(FileNotFoundError):
         host.desktop_entry(str(tmp_path / "absent.desktop"))
+
+
+def test_desktop_entry_raises_for_a_line_that_is_not_key_value(tmp_path):
+    path = write_entry(tmp_path, "broken.desktop", "[Desktop Entry]\nType=Application\nbroken\n")
+
+    with pytest.raises(ValueError) as error:
+        host.desktop_entry(str(path))
+
+    assert f"{path}:3: not a key=value line in a group" in str(error.value)
+
+
+def test_desktop_entry_raises_for_a_key_before_any_group(tmp_path):
+    path = write_entry(tmp_path, "early.desktop", "Type=Application\n[Desktop Entry]\nName=x\n")
+
+    with pytest.raises(ValueError) as error:
+        host.desktop_entry(str(path))
+
+    assert f"{path}:1: not a key=value line in a group" in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("text", "line", "group"),
+    [
+        ("[Desktop Entry]\nName=x\n[Desktop Entry]\nName=y\n", 3, "Desktop Entry"),
+        (
+            "[Desktop Entry]\nName=x\n[Desktop Action Open]\n[Desktop Action Open]\n",
+            4,
+            "Desktop Action Open",
+        ),
+    ],
+)
+def test_desktop_entry_raises_for_a_duplicate_group(tmp_path, text, line, group):
+    path = write_entry(tmp_path, "twice.desktop", text)
+
+    with pytest.raises(ValueError) as error:
+        host.desktop_entry(str(path))
+
+    assert f"{path}:{line}: group [{group}] appears twice" in str(error.value)
 
 
 def test_desktop_entry_raises_for_a_duplicate_key(tmp_path):
@@ -239,8 +308,20 @@ def test_desktop_entry_raises_for_a_duplicate_key(tmp_path):
     with pytest.raises(ValueError) as error:
         host.desktop_entry(str(path))
 
-    assert str(path) in str(error.value)
-    assert "duplicate key 'Exec'" in str(error.value)
+    assert f"{path}:3: key Exec appears twice in [Desktop Entry]" in str(error.value)
+
+
+def test_desktop_entry_raises_for_a_duplicate_key_in_another_group(tmp_path):
+    path = write_entry(
+        tmp_path,
+        "dup.desktop",
+        "[Desktop Entry]\nName=x\n\n[Desktop Action Open]\nExec=/usr/bin/a\nExec=/usr/bin/b\n",
+    )
+
+    with pytest.raises(ValueError) as error:
+        host.desktop_entry(str(path))
+
+    assert f"{path}:6: key Exec appears twice in [Desktop Action Open]" in str(error.value)
 
 
 def test_desktop_entry_raises_without_a_desktop_entry_group(tmp_path):
@@ -253,13 +334,16 @@ def test_desktop_entry_raises_without_a_desktop_entry_group(tmp_path):
     assert "no [Desktop Entry] group" in str(error.value)
 
 
-def test_autostart_entries_returns_sorted_desktop_files(monkeypatch, tmp_path):
+# ── autostart_entries ─────────────────────────────────────────────────────────
+
+
+def test_autostart_entries_returns_sorted_desktop_names(monkeypatch, tmp_path):
     first = tmp_path / "one"
     second = tmp_path / "two"
-    write_entry(first, "b.desktop", "[Desktop Entry]\nExec=/usr/bin/b\n")
-    write_entry(first, "a.desktop", "[Desktop Entry]\nExec=/usr/bin/a\n")
+    write_entry(first, "b.desktop", CANONICAL_ENTRY)
+    write_entry(first, "a.desktop", CANONICAL_ENTRY)
     write_entry(first, "notes.txt", "ignored\n")
-    write_entry(second, "c.desktop", "[Desktop Entry]\nExec=/usr/bin/c\n")
+    write_entry(second, "c.desktop", CANONICAL_ENTRY)
     monkeypatch.setattr(host, "AUTOSTART_DIRS", (str(first), str(second)))
 
     assert host.autostart_entries() == [
@@ -269,9 +353,22 @@ def test_autostart_entries_returns_sorted_desktop_files(monkeypatch, tmp_path):
     ]
 
 
+def test_autostart_entries_lists_names_without_an_isfile_filter(monkeypatch, tmp_path):
+    write_entry(tmp_path, "file.desktop", CANONICAL_ENTRY)
+    (tmp_path / "folder.desktop").mkdir()
+    (tmp_path / "dangling.desktop").symlink_to(tmp_path / "gone.desktop")
+    monkeypatch.setattr(host, "AUTOSTART_DIRS", (str(tmp_path),))
+
+    assert host.autostart_entries() == [
+        str(tmp_path / "dangling.desktop"),
+        str(tmp_path / "file.desktop"),
+        str(tmp_path / "folder.desktop"),
+    ]
+
+
 def test_autostart_entries_treats_a_missing_directory_as_empty(monkeypatch, tmp_path):
     present = tmp_path / "present"
-    write_entry(present, "only.desktop", "[Desktop Entry]\nExec=/usr/bin/only\n")
+    write_entry(present, "only.desktop", CANONICAL_ENTRY)
     monkeypatch.setattr(
         host,
         "AUTOSTART_DIRS",
@@ -281,12 +378,21 @@ def test_autostart_entries_treats_a_missing_directory_as_empty(monkeypatch, tmp_
     assert host.autostart_entries() == [str(present / "only.desktop")]
 
 
-def test_autostart_entries_ignores_a_desktop_directory(monkeypatch, tmp_path):
-    directory = tmp_path / "autostart"
-    (directory / "folder.desktop").mkdir(parents=True)
-    monkeypatch.setattr(host, "AUTOSTART_DIRS", (str(directory),))
+def test_autostart_entries_raises_when_an_autostart_path_is_not_a_directory(
+    monkeypatch, tmp_path
+):
+    path = tmp_path / "autostart"
+    path.write_text("not a directory\n", encoding="utf-8")
+    monkeypatch.setattr(host, "AUTOSTART_DIRS", (str(path),))
 
-    assert host.autostart_entries() == []
+    with pytest.raises(RuntimeError) as error:
+        host.autostart_entries()
+
+    assert str(path) in str(error.value)
+    assert "cannot list" in str(error.value)
+
+
+# ── first_login_entries ───────────────────────────────────────────────────────
 
 
 @pytest.mark.parametrize(
@@ -323,15 +429,26 @@ def test_first_login_entries_ignores_other_entries(monkeypatch, tmp_path):
     assert host.first_login_entries() == []
 
 
-def test_first_login_entries_raises_for_an_unparseable_entry(monkeypatch, tmp_path):
-    entry = write_entry(tmp_path, "broken.desktop", "[Desktop Action Open]\nExec=/usr/bin/a\n")
+def test_first_login_entries_raises_for_a_dangling_symlink(monkeypatch, tmp_path):
+    entry = tmp_path / "org.frostyard.FirstSetup.autostart.desktop"
+    entry.symlink_to(tmp_path / "gone.desktop")
     monkeypatch.setattr(host, "AUTOSTART_DIRS", (str(tmp_path),))
 
     with pytest.raises(RuntimeError) as error:
         host.first_login_entries()
 
     assert str(entry) in str(error.value)
-    assert "no [Desktop Entry] group" in str(error.value)
+
+
+def test_first_login_entries_raises_for_an_unparseable_entry(monkeypatch, tmp_path):
+    entry = write_entry(tmp_path, "broken.desktop", "[Desktop Entry]\nbroken\n")
+    monkeypatch.setattr(host, "AUTOSTART_DIRS", (str(tmp_path),))
+
+    with pytest.raises(RuntimeError) as error:
+        host.first_login_entries()
+
+    assert str(entry) in str(error.value)
+    assert "not a key=value line in a group" in str(error.value)
 
 
 def test_first_login_entries_raises_for_an_unreadable_exec(monkeypatch, tmp_path):
@@ -349,40 +466,102 @@ def test_first_login_entries_raises_for_an_unreadable_exec(monkeypatch, tmp_path
     assert "cannot parse Exec" in str(error.value)
 
 
-def test_is_executable_file_accepts_an_executable_file(tmp_path):
+# ── starts_on_gnome ───────────────────────────────────────────────────────────
+
+
+def canonical_entry(tmp_path):
+    return host.desktop_entry(str(write_entry(tmp_path, "entry.desktop", CANONICAL_ENTRY)))
+
+
+def entry_with(tmp_path, **overrides):
+    entry = canonical_entry(tmp_path)
+    for key, value in overrides.items():
+        if value is None:
+            entry.pop(key, None)
+        else:
+            entry[key] = value
+    return entry
+
+
+def test_starts_on_gnome_accepts_the_canonical_entry(tmp_path):
+    assert host.starts_on_gnome(canonical_entry(tmp_path)) is True
+
+
+def test_starts_on_gnome_accepts_a_localized_name(tmp_path):
+    entry = entry_with(tmp_path, **{"Name[de]": "Ersteinrichtung"})
+
+    assert host.starts_on_gnome(entry) is True
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"Hidden": "true"},
+        {"X-GNOME-Autostart-enabled": "false"},
+        {"Type": "Link"},
+        {"Type": None},
+        {"OnlyShowIn": "KDE;"},
+        {"OnlyShowIn": ""},
+        {"NotShowIn": "GNOME;"},
+    ],
+    ids=[
+        "hidden",
+        "gnome-disabled",
+        "type-link",
+        "type-missing",
+        "only-kde",
+        "only-empty",
+        "not-gnome",
+    ],
+)
+def test_starts_on_gnome_rejects_an_entry_gnome_would_not_start(tmp_path, overrides):
+    assert host.starts_on_gnome(entry_with(tmp_path, **overrides)) is False
+
+
+def test_starts_on_gnome_accepts_an_other_desktop_in_only_show_in(tmp_path):
+    entry = entry_with(tmp_path, OnlyShowIn="GNOME;KDE;")
+
+    assert host.starts_on_gnome(entry) is True
+
+
+# ── is_executable_by_all ──────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize("mode", [0o755, 0o757])
+def test_is_executable_by_all_accepts_a_file_others_may_run(tmp_path, mode):
     path = tmp_path / "run"
     path.write_text("#!/bin/sh\n", encoding="utf-8")
-    path.chmod(0o755)
-
-    assert host.is_executable_file(str(path)) is True
-
-
-@pytest.mark.parametrize("mode", [0o644, 0o600])
-def test_is_executable_file_rejects_a_file_without_execute_bits(tmp_path, mode):
-    path = tmp_path / "data"
-    path.write_text("data\n", encoding="utf-8")
     path.chmod(mode)
 
-    assert host.is_executable_file(str(path)) is False
+    assert host.is_executable_by_all(str(path)) is True
 
 
-def test_is_executable_file_rejects_a_directory(tmp_path):
+@pytest.mark.parametrize("mode", [0o700, 0o750, 0o644, 0o600])
+def test_is_executable_by_all_rejects_a_file_others_may_not_run(tmp_path, mode):
+    path = tmp_path / "run"
+    path.write_text("#!/bin/sh\n", encoding="utf-8")
+    path.chmod(mode)
+
+    assert host.is_executable_by_all(str(path)) is False
+
+
+def test_is_executable_by_all_rejects_a_directory(tmp_path):
     path = tmp_path / "bin"
     path.mkdir()
     path.chmod(0o755)
 
-    assert host.is_executable_file(str(path)) is False
+    assert host.is_executable_by_all(str(path)) is False
 
 
-def test_is_executable_file_rejects_a_missing_path(tmp_path):
-    assert host.is_executable_file(str(tmp_path / "absent")) is False
+def test_is_executable_by_all_rejects_a_missing_path(tmp_path):
+    assert host.is_executable_by_all(str(tmp_path / "absent")) is False
 
 
-def test_is_executable_file_follows_a_symlink(tmp_path):
+def test_is_executable_by_all_follows_a_symlink(tmp_path):
     target = tmp_path / "target"
     target.write_text("#!/bin/sh\n", encoding="utf-8")
     target.chmod(0o755)
     link = tmp_path / "link"
     link.symlink_to(target)
 
-    assert host.is_executable_file(str(link)) is True
+    assert host.is_executable_by_all(str(link)) is True

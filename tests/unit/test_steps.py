@@ -407,42 +407,47 @@ def test_path_missing_reports_what_it_found(monkeypatch, context, islink, expect
     assert str(error.value) == expected
 
 
-def test_path_is_executable_accepts_an_executable_file(monkeypatch, context):
-    monkeypatch.setattr(shared_steps.host, "is_executable_file", Mock(return_value=True))
+def test_path_is_executable_for_all_accepts_an_executable_file(monkeypatch, context):
+    probe = Mock(return_value=True)
+    monkeypatch.setattr(shared_steps.host, "is_executable_by_all", probe)
 
-    shared_steps.step_path_is_executable(context, "/usr/bin/chairlift-first-run")
+    shared_steps.step_path_is_executable_for_all(context, "/usr/bin/chairlift-first-run")
+
+    probe.assert_called_once_with("/usr/bin/chairlift-first-run")
 
 
-def test_path_is_executable_reports_a_file_without_execute_bits(monkeypatch, context, tmp_path):
-    monkeypatch.setattr(shared_steps.host, "is_executable_file", Mock(return_value=False))
-    path = tmp_path / "data"
-    path.write_text("data\n", encoding="utf-8")
-    path.chmod(0o644)
+def test_path_is_executable_for_all_reports_a_mode_others_may_not_run(
+    monkeypatch, context, tmp_path
+):
+    monkeypatch.setattr(shared_steps.host, "is_executable_by_all", Mock(return_value=False))
+    path = tmp_path / "run"
+    path.write_text("#!/bin/sh\n", encoding="utf-8")
+    path.chmod(0o700)
 
     with pytest.raises(AssertionError) as error:
-        shared_steps.step_path_is_executable(context, str(path))
+        shared_steps.step_path_is_executable_for_all(context, str(path))
 
     message = str(error.value)
-    assert f"{path} is not an executable file" in message
-    assert "mode 0644" in message
+    assert f"{path} is not an executable file for every user" in message
+    assert "mode 0700" in message
     assert "a regular file" in message
 
 
-def test_path_is_executable_reports_a_missing_path(monkeypatch, context, tmp_path):
-    monkeypatch.setattr(shared_steps.host, "is_executable_file", Mock(return_value=False))
+def test_path_is_executable_for_all_reports_a_missing_path(monkeypatch, context, tmp_path):
+    monkeypatch.setattr(shared_steps.host, "is_executable_by_all", Mock(return_value=False))
 
-    with pytest.raises(AssertionError, match="is not an executable file"):
-        shared_steps.step_path_is_executable(context, str(tmp_path / "absent"))
+    with pytest.raises(AssertionError, match="is not an executable file for every user"):
+        shared_steps.step_path_is_executable_for_all(context, str(tmp_path / "absent"))
 
 
-def test_path_is_executable_reports_a_directory(monkeypatch, context, tmp_path):
-    monkeypatch.setattr(shared_steps.host, "is_executable_file", Mock(return_value=False))
+def test_path_is_executable_for_all_reports_a_directory(monkeypatch, context, tmp_path):
+    monkeypatch.setattr(shared_steps.host, "is_executable_by_all", Mock(return_value=False))
     path = tmp_path / "bin"
     path.mkdir()
     path.chmod(0o755)
 
     with pytest.raises(AssertionError) as error:
-        shared_steps.step_path_is_executable(context, str(path))
+        shared_steps.step_path_is_executable_for_all(context, str(path))
 
     assert "not a regular file" in str(error.value)
 
@@ -477,6 +482,113 @@ def test_desktop_entry_sets_reports_a_missing_file(tmp_path, context):
     with pytest.raises(AssertionError, match="desktop entry .* does not exist"):
         shared_steps.step_desktop_entry_sets(
             context, str(tmp_path / "absent.desktop"), "Exec", "/usr/bin/chairlift-first-run"
+        )
+
+
+CANONICAL_ENTRY = """\
+[Desktop Entry]
+Type=Application
+Name=ChairLift First Run
+Comment=Set up this machine
+Exec=/usr/bin/chairlift-first-run
+Icon=org.frostyard.ChairLift
+Terminal=false
+NoDisplay=true
+"""
+
+
+def gnome_entry(tmp_path, *extra_lines):
+    path = tmp_path / "entry.desktop"
+    path.write_text(CANONICAL_ENTRY + "".join(f"{line}\n" for line in extra_lines), "utf-8")
+    return path
+
+
+def test_desktop_entry_starts_on_gnome_accepts_the_canonical_entry(tmp_path, context):
+    shared_steps.step_desktop_entry_starts_on_gnome(context, str(gnome_entry(tmp_path)))
+
+
+def test_desktop_entry_starts_on_gnome_accepts_a_localized_name(tmp_path, context):
+    path = gnome_entry(tmp_path, "Name[de]=Ersteinrichtung")
+
+    shared_steps.step_desktop_entry_starts_on_gnome(context, str(path))
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Hidden=true",
+        "X-GNOME-Autostart-enabled=false",
+        "OnlyShowIn=KDE;",
+        "OnlyShowIn=",
+        "NotShowIn=GNOME;",
+    ],
+    ids=["hidden", "gnome-disabled", "only-kde", "only-empty", "not-gnome"],
+)
+def test_desktop_entry_starts_on_gnome_reports_an_entry_gnome_would_not_start(
+    tmp_path, context, line
+):
+    path = gnome_entry(tmp_path, line)
+
+    with pytest.raises(AssertionError) as error:
+        shared_steps.step_desktop_entry_starts_on_gnome(context, str(path))
+
+    message = str(error.value)
+    assert str(path) in message
+    assert "would not be started by GNOME" in message
+
+
+def test_desktop_entry_starts_on_gnome_reports_a_link_entry(tmp_path, context):
+    path = tmp_path / "entry.desktop"
+    path.write_text(
+        CANONICAL_ENTRY.replace("Type=Application", "Type=Link"), encoding="utf-8"
+    )
+
+    with pytest.raises(AssertionError, match="would not be started by GNOME"):
+        shared_steps.step_desktop_entry_starts_on_gnome(context, str(path))
+
+
+def test_desktop_entry_starts_on_gnome_reports_a_missing_type(tmp_path, context):
+    path = tmp_path / "entry.desktop"
+    path.write_text(CANONICAL_ENTRY.replace("Type=Application\n", ""), encoding="utf-8")
+
+    with pytest.raises(AssertionError, match="would not be started by GNOME"):
+        shared_steps.step_desktop_entry_starts_on_gnome(context, str(path))
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "TryExec=x",
+        "AutostartCondition=unless-exists org.frostyard.ChairLift.done",
+    ],
+    ids=["try-exec", "autostart-condition"],
+)
+def test_desktop_entry_starts_on_gnome_reports_an_unvalidated_key(tmp_path, context, line):
+    path = gnome_entry(tmp_path, line)
+
+    with pytest.raises(AssertionError) as error:
+        shared_steps.step_desktop_entry_starts_on_gnome(context, str(path))
+
+    message = str(error.value)
+    assert str(path) in message
+    assert "carries keys the guard does not validate:" in message
+    assert line.split("=")[0] in message
+
+
+def test_desktop_entry_starts_on_gnome_reports_a_terminal_entry(tmp_path, context):
+    path = tmp_path / "entry.desktop"
+    path.write_text(
+        CANONICAL_ENTRY.replace("Terminal=false", "Terminal=true"), encoding="utf-8"
+    )
+
+    with pytest.raises(AssertionError, match="must not set Terminal=true"):
+        shared_steps.step_desktop_entry_starts_on_gnome(context, str(path))
+
+
+def test_desktop_entry_starts_on_gnome_reports_a_missing_file(tmp_path, context):
+    with pytest.raises(AssertionError, match="desktop entry .* does not exist"):
+        shared_steps.step_desktop_entry_starts_on_gnome(
+            context, str(tmp_path / "absent.desktop")
         )
 
 
@@ -558,6 +670,19 @@ def test_no_named_autostart_entry_reports_a_matching_entry(monkeypatch, context)
     message = str(error.value)
     assert "unexpected org.frostyard.FirstSetup autostart entries:" in message
     assert entry in message
+
+
+def test_no_named_autostart_entry_reports_a_dangling_symlink(
+    monkeypatch, tmp_path, context
+):
+    entry = tmp_path / "org.frostyard.FirstSetup.autostart.desktop"
+    entry.symlink_to(tmp_path / "gone.desktop")
+    monkeypatch.setattr(shared_steps.host, "AUTOSTART_DIRS", (str(tmp_path),))
+
+    with pytest.raises(AssertionError) as error:
+        shared_steps.step_no_named_autostart_entry(context, "org.frostyard.FirstSetup")
+
+    assert str(entry) in str(error.value)
 
 
 def test_headless_requirement_allows_headless_variant(monkeypatch, context):

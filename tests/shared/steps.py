@@ -96,19 +96,20 @@ def step_path_missing(context, path):
     assert not os.path.lexists(path), f"{path} exists{dangling}"
 
 
-@then('"{path}" is an executable file')
-def step_path_is_executable(context, path):
-    if host.is_executable_file(path):
+@then('"{path}" is an executable file for every user')
+def step_path_is_executable_for_all(context, path):
+    if host.is_executable_by_all(path):
         return
     try:
         mode = os.stat(path).st_mode
     except OSError as error:
         raise AssertionError(
-            f"{path} is not an executable file ({error.strerror})"
+            f"{path} is not an executable file for every user ({error.strerror})"
         ) from None
     kind = "a regular file" if stat.S_ISREG(mode) else "not a regular file"
     raise AssertionError(
-        f"{path} is not an executable file (mode {mode & 0o777:04o}, {kind})"
+        f"{path} is not an executable file for every user "
+        f"(mode {stat.S_IMODE(mode):04o}, {kind})"
     )
 
 
@@ -123,6 +124,31 @@ def step_desktop_entry_sets(context, path, key, value):
     assert actual == value, (
         f"desktop entry {path} sets {key} to {actual!r}, expected {value!r} "
         f"(keys: {sorted(entry)})"
+    )
+
+
+@then('the desktop entry "{path}" starts in a GNOME session')
+def step_desktop_entry_starts_on_gnome(context, path):
+    assert os.path.isfile(path), f"desktop entry {path} does not exist"
+    entry = host.desktop_entry(path)
+    assert host.starts_on_gnome(entry), (
+        f"desktop entry {path} would not be started by GNOME "
+        f"(Type={entry.get('Type')!r}, Hidden={entry.get('Hidden')!r}, "
+        f"X-GNOME-Autostart-enabled={entry.get('X-GNOME-Autostart-enabled')!r}, "
+        f"OnlyShowIn={entry.get('OnlyShowIn')!r}, NotShowIn={entry.get('NotShowIn')!r})"
+    )
+    extra = sorted(
+        key
+        for key in entry
+        if key not in host.CANONICAL_KEYS and not key.startswith(host.CANONICAL_LOCALIZED)
+    )
+    assert not extra, (
+        f"desktop entry {path} carries keys the guard does not validate: "
+        f"{', '.join(extra)} (they can stop GNOME from starting it)"
+    )
+    terminal = entry.get("Terminal", "false")
+    assert terminal == "false", (
+        f"desktop entry {path} must not set Terminal={terminal}"
     )
 
 
