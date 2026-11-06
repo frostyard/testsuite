@@ -27,11 +27,11 @@
     },
     {
       "glob": "mise.toml",
-      "why": "supply chain: the tool pins that CI installs"
+      "why": "governance: the tool pins that CI installs (supply chain)"
     },
     {
       "glob": "mise.lock",
-      "why": "supply chain: the checksums of the tools that CI installs"
+      "why": "governance: the checksums of the tools that CI installs (supply chain)"
     },
     {
       "glob": "policies/**",

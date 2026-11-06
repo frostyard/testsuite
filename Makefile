@@ -34,6 +34,9 @@ verify-template:
 	node scripts/check-template.mjs
 	node --test test/*.test.mjs
 
+# Each command fails on an empty input (ADR-0010): `unittest discover` exits 5
+# when it runs no test (Python 3.12 and later), pytest exits 5 when it collects
+# none, and check_feature_discovery.py fails when it selects no scenario.
 verify-python:
 	$(PYTHON) -m unittest discover -s policies -p 'test_*.py'
 	$(PYTHON) policies/check_repository.py
