@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "paths": [
+    {
+      "glob": ".github/risk-paths.json",
+      "why": "governance: the high-risk path list"
+    },
+    {
+      "glob": ".github/workflows/**",
+      "why": "governance: CI, the risk-paths caller and token permissions"
+    },
+    {
+      "glob": "Makefile",
+      "why": "governance: the verify gate"
+    },
+    {
+      "glob": "scripts/check-template.mjs",
+      "why": "governance: the template verification gate"
+    },
+    {
+      "glob": "scripts/check-corrections.mjs",
+      "why": "governance: the corrections validation gate"
+    },
+    {
+      "glob": "scripts/lib/**",
+      "why": "governance: the vendored risk-path validator and matcher"
+    },
+    {
+      "glob": "mise.toml",
+      "why": "governance: the tool pins that CI installs (supply chain)"
+    },
+    {
+      "glob": "mise.lock",
+      "why": "governance: the checksums of the tools that CI installs (supply chain)"
+    },
+    {
+      "glob": "policies/**",
+      "why": "governance: the repository policy files and their checkers"
+    },
+    {
+      "glob": "tests/shared/**",
+      "why": "governance: shared probes and step vocabulary that every suite uses to gate images in lab; risk tier High in docs/risk-tiers.md"
+    },
+    {
+      "glob": "tests/**/environment.py",
+      "why": "governance: suite hooks that gate variants"
+    },
+    {
+      "glob": "tests/smoke/features/steps/smoke_steps.py",
+      "why": "governance: the empirical EXPECTED_CONTAINER_FAILURES allowlist"
+    },
+    {
+      "glob": ".claude/settings.json",
+      "why": "governance: agent permission rules"
+    }
+  ]
+}

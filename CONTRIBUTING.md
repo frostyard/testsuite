@@ -3,8 +3,8 @@
 Thanks for looking at contributing to the frostyard testsuite. This repo holds
 the BDD suites that validate [snosi](https://github.com/frostyard/snosi) bootc
 images, run by [`frostyard/lab`](https://github.com/frostyard/lab). Please read
-the [README](README.md) first — it explains the execution model, layout, and
-conventions this project follows.
+the [execution model](docs/design/execution-model.md) first — it explains how the
+suites run, the layout, and the conventions this project follows.
 
 ## Before you start
 
@@ -43,11 +43,28 @@ PYTHONPATH=. python3 -m behave tests/smoke/features/ --no-capture --tags ~@wip
 ```
 
 Or against an image the way the lab does — see the "Running it" section of the
-[README](README.md#running-it) for the full `podman` invocation.
+[execution model](docs/design/execution-model.md#running-it) for the full
+`podman` invocation.
 
 **behave is 1.2.6**, from Debian trixie's `python3-behave`. Install it from the
 distro package rather than pip so the harness stays on the image's own Python;
 note that tag negation is `~@wip`, not the `not @wip` form from behave 1.3.
+
+## The make gate
+
+The repository gate needs no image and no cluster:
+
+```bash
+mise install                                          # the pinned Node
+sudo apt-get install python3-behave python3-pytest    # behave 1.2.6, pytest
+make verify                                           # the gate `make check` also runs
+make ci                                               # verify, plus the corrections check
+```
+
+`make verify` runs the template gate and its Node tests, then the repository
+policy check, the policy unittests, the pytest unit suite of `tests/unit` and
+the behave feature-discovery check of `tests/smoke/features`. Passing the unit
+suite does not replace a run against a live image.
 
 ## Submitting your change
 
