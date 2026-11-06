@@ -1,0 +1,15 @@
+# Dependabot (frostyard/core ADR-0071 row B13). This repository has one
+# manifest that needs updates: the actions the workflows pin (ADR-0021).
+# behave and pytest come from the distribution packages `python3-behave` and
+# `python3-pytest`, which the distribution and the images update, so there is
+# no pip manifest here.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"

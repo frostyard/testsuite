@@ -4,13 +4,14 @@ on:
   issues:
     types: [opened]
 
-permissions:
-  issues: write
+permissions: {}
 
 jobs:
   label-by-title:
     name: Label by title
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
       - name: Apply matching label
         shell: bash

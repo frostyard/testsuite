@@ -3,7 +3,7 @@
 This directory is the durable entry point for lessons that should survive
 individual agent sessions. Project documentation remains the source of truth:
 
-- [`README.md`](../README.md) defines the execution model and test conventions.
+- [`docs/design/execution-model.md`](../docs/design/execution-model.md) defines the execution model and test conventions.
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) defines the contribution workflow.
 - [`docs/review-rubric.md`](../docs/review-rubric.md) defines review gates.
 - [`docs/quality.md`](../docs/quality.md) indexes current quality signals.

@@ -1,3 +1,10 @@
+# CI entry (frostyard core ADR-0071 row B12): 1 job `gate` runs `make ci`, the
+# make gate of ADR-0043 and ADR-0044 (template gate, corrections, repository
+# policy, the policy unittests, the pytest unit suite, feature discovery).
+# behave and pytest come from the distribution packages `python3-behave` and
+# `python3-pytest`, so no Python here comes from pip (ADR-0043).
+# ADR-0021: SHA-pinned actions, top-level permissions {}, contents: read only,
+# and checkout does not persist credentials. No secrets.
 name: CI
 
 on:
@@ -5,39 +12,32 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-  pipeline-present:
-    name: Pipeline present
+  gate:
+    name: Repository gate
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Test repository policy and workflow contracts
-        run: python3 -m unittest discover -s policies -p 'test_*.py'
-
-      - name: Enforce repository policy
-        run: python3 policies/check_repository.py
-
-      - name: Install unit-test dependencies
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # check-corrections.mjs --base reads the base commit's copy.
+          fetch-depth: 0
+      # Node comes from mise.toml and mise.lock (ADR-0043), checksum-verified,
+      # the same way a developer's `mise install` does.
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4.2.5
+        with:
+          install: true
+          install_args: node
+          cache: true
+      - name: Install test dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq --no-install-recommends python3-behave python3-pytest
-
-      - name: Test BDD framework
+      - run: make ci PYTHON=/usr/bin/python3 BASE="$BASE"
         env:
-          PYTHONPATH: .
-        run: /usr/bin/python3 -m pytest -q tests/unit
-
-      - name: Validate feature discovery
-        env:
-          PYTHONPATH: .
-        run: /usr/bin/python3 policies/check_feature_discovery.py tests/smoke/features/
-
-      - name: Confirm CI is wired
-        run: |
-          echo "CI/CD pipeline is configured for this repository."
-          echo "Runtime behave suites are exercised by frostyard/lab against live images."
+          BASE: ${{ github.event.pull_request.base.sha || '' }}

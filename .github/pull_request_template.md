@@ -1,43 +1,46 @@
-## Description
+<!-- Branch from the latest main. Reviews apply AGENTS.md,
+docs/review-rubric.md and the docs rules in docs/README.md. -->
 
-<!-- Provide a brief summary of the changes in this pull request. -->
+## Summary
 
-## Related Issue
+<!-- What does this change do, and why? Which scenarios, steps, probes or
+workflows does it affect? -->
 
-<!-- Link to the issue this PR addresses, e.g. Closes #123 -->
+## Related issue
 
-## Type of Change
+- Closes #
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-- [ ] Other (please describe):
+## Risk tier
 
-## Change Risk
+Declare the highest applicable tier, never lower; the scale is
+[docs/risk-tiers.md](https://github.com/frostyard/testsuite/blob/main/docs/risk-tiers.md) (Low, Medium, High). A `risk:high`
+label (a path in `.github/risk-paths.json`) means High: name each matched path
+and why the change is safe, and give the rollback or safe-disable step.
 
-<!-- Select the highest applicable tier and explain why. -->
+- Tier: Low / Medium / High
+- Rationale:
 
-See the [change risk tiers](https://github.com/frostyard/testsuite/blob/main/docs/risk-tiers.md).
+## Validation
 
-- [ ] Low
-- [ ] Medium
-- [ ] High
+<!-- List the commands you actually ran and their outcome. -->
 
-**Rationale:**
+- [ ] `make verify` passes (template gate, repository policy, policy unittests, pytest, feature discovery)
+- [ ] For a scenario, step or probe change: `PYTHONPATH=. python3 -m behave tests/smoke/features/ --no-capture --tags ~@wip` against a live snosi machine or a nested image, or the reason it could not run
+- [ ] Revert test for a fix: the new test fails with the fix reverted; command: <!-- name it -->
+- [ ] Workflows changed: every action is SHA-pinned with a version comment, read-only top-level `permissions`, and `persist-credentials: false`
+- [ ] Not run (explain why)
 
-## How Has This Been Tested?
+## Docs housekeeping
 
-<!-- Describe the tests you ran to verify your changes. -->
+<!-- Delete rows that do not apply. -->
+
+- [ ] Documentation updated (`AGENTS.md`, `README.md`, `docs/`) where relevant
+- [ ] New docs started from their category's `TEMPLATE.md` and indexed in `docs/README.md`
+- [ ] Cross-links added in both directions (ADR ↔ design ↔ spec ↔ plan)
+- [ ] New significant decision recorded as an ADR first, in this PR
 
 ## Checklist
 
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have checked this change against the
-  [PR review rubric](https://github.com/frostyard/testsuite/blob/main/docs/review-rubric.md)
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
+- [ ] No secrets, tokens or credentials are committed
+- [ ] I have checked this change against the [PR review rubric](https://github.com/frostyard/testsuite/blob/main/docs/review-rubric.md)
+- [ ] Blocking review point fixed: guard added and 1 `.memory/corrections.jsonl` line added

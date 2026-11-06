@@ -1,0 +1,127 @@
+# Execution model
+
+<!--
+Living document: update it in place so it always describes how the suites run.
+Rationale for the model lives in frostyard/lab, which is the only runner.
+-->
+
+Living document. Runner: [frostyard/lab](https://github.com/frostyard/lab).
+
+## The execution model
+
+Suites run **inside the image under test**. The lab boots the bootc OCI image as
+a nested systemd container and runs `behave` against that live system:
+
+```
+podman run --systemd=always --privileged … <image>@<digest> /sbin/init
+  └─ apt-get install python3-behave
+  └─ behave tests/<suite>/features
+```
+
+So there is no SSH, no serial console, and no remote transport in this repo. A
+probe is a subprocess against the local root filesystem, which means scenarios
+read exactly like the assertions a person would make on a running machine.
+
+**What that model cannot see**, and what therefore does not belong here:
+
+- the kernel — a container runs the host's
+- a graphical seat — no seat0, no framebuffer, so GDM cannot start a session
+- disk layout — EROFS, dm-verity, Secure Boot, TPM/LUKS `/var`, A/B updates
+
+Those need a real boot and belong to the lab's VM lane.
+
+## Layout
+
+```
+tests/
+├── e2e/
+│   └── .gitkeep    marker for ACMM discovery; not a Behave suite
+├── shared/
+│   ├── host.py     probe helpers: run(), have(), os_release(), failed_units(),
+│   │               desktop_entry(), first_login_entries(), starts_on_gnome()
+│   └── steps.py    step vocabulary shared by every suite
+└── smoke/features/
+    ├── boot.feature        boots to usable systemd, no unexpected failures
+    ├── identity.feature    os-release provenance and sysext level
+    ├── toolchain.feature   shipped binaries are present and runnable
+    ├── desktop.feature     graphical stack (skipped on headless variants)
+    ├── headless.feature    headless contracts (skipped on graphical variants)
+    ├── environment.py
+    └── steps/
+```
+
+`smoke` is the only Behave suite currently present. The lab's pipeline also
+reserves `system` and `sysext`; adding features under either
+`tests/<suite>/features/` makes that suite runnable without a separate registry
+change. `tests/e2e/` is only a tracked marker for ACMM discovery: it contains no
+Behave features, and `e2e` is not a lab suite name. For a copyable feature,
+step-registration shim, shared-step implementation, tagging rules, and the
+required validation command, see [Authoring a testsuite
+scenario](../authoring-scenarios.md).
+
+## Running it
+
+Against a live snosi machine, from a checkout:
+
+```bash
+PYTHONPATH=. python3 -m behave tests/smoke/features/ --no-capture --tags ~@wip
+```
+
+Against an image, the way the lab does it:
+
+```bash
+podman run --detach --systemd=always --privileged --cgroupns=host \
+  --security-opt seccomp=unconfined \
+  --tmpfs /run:rw,mode=755,size=512m --tmpfs /tmp:rw,mode=1777,size=512m \
+  --mount type=bind,source=/sys,destination=/sys,ro \
+  --name probe ghcr.io/frostyard/snow:latest /sbin/init
+
+podman cp . probe:/testsuite
+podman exec probe bash -c 'apt-get update -qq &&
+  apt-get install -y -qq --no-install-recommends python3-behave'
+podman exec -e PYTHONPATH=/testsuite -e SNOSI_VARIANT=snow probe \
+  python3 -m behave /testsuite/tests/smoke/features/ --no-capture --tags ~@wip
+```
+
+## Environment
+
+| Variable | Meaning |
+|---|---|
+| `SNOSI_VARIANT` | `snow`, `snowfield`, `sundog`, `floe`, … Gates variant-specific scenarios. |
+| `SNOSI_IMAGE` | Full pinned reference of the image under test. Logged, not asserted on. |
+
+`DESKTOPS` in `tests/shared/host.py` maps each graphical variant to the desktop
+it ships (`gnome` or `kde`). Variants not in it skip the desktop scenarios, and
+desktop-specific scenarios skip on a variant that ships the other desktop. One suite runs unmodified across
+the whole image family.
+
+## Conventions
+
+**behave is 1.2.6**, from Debian trixie's `python3-behave`. Using the distro
+package rather than pip keeps the harness on the image's own Python and avoids a
+PEP 668 bootstrap. It also fixes the tag syntax: negation is `~@wip`, not the
+`not @wip` form that behave 1.3 introduced.
+
+**Allowlists are empirical.** `EXPECTED_CONTAINER_FAILURES` in
+`tests/smoke/features/steps/smoke_steps.py` is exactly the set of units observed
+failing on a clean nested boot — not a set of units predicted to fail. Every
+entry states why it cannot pass. A speculative allowlist is how a real
+regression gets tolerated forever; if a unit stops failing, delete its entry.
+
+**Assert on the shipped image, never a modified one.** The harness installs
+`python3-behave` into the running container, and nothing else. A test that needs
+a package installed to pass is testing something the image does not ship.
+
+**Tag `@wip` for anything that should not gate.** The lab excludes it by default.
+
+**Coverage is gated, not chased.** `codecov.yml` at the repo root sets the
+thresholds: a project-level drop of more than 2% fails, and new code is expected
+at 80%. Feature files are excluded — they are the specification, not the code
+under measurement.
+
+## References
+
+- Authoring: [authoring a testsuite scenario](../authoring-scenarios.md)
+- Review and risk: [risk tiers](../risk-tiers.md)
+- Signals: [quality](../quality.md)
+- Runner: [frostyard/lab](https://github.com/frostyard/lab)

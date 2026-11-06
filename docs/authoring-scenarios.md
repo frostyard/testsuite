@@ -2,8 +2,8 @@
 
 This guide follows one minimal scenario from Gherkin to its Python step
 implementation and runtime validation. Read the [execution
-model](../README.md#the-execution-model) first: these suites run inside the
-image under test, not against it over SSH.
+model](design/execution-model.md#the-execution-model) first: these suites run
+inside the image under test, not against it over SSH.
 
 ## 1. Choose the suite
 
@@ -129,7 +129,7 @@ PYTHONPATH=. python3 -m behave \
 
 Use Debian trixie's `python3-behave` package (Behave 1.2.6). If a live machine
 is unavailable, use the repository's [Lab-equivalent container
-invocation](../README.md#running-it), replacing `smoke` with the affected suite,
-and state exactly what could not be validated in the pull request. Include the
-passing Behave output with the change; repository CI does not replace this
-image-runtime validation.
+invocation](design/execution-model.md#running-it), replacing `smoke` with the
+affected suite, and state exactly what could not be validated in the pull
+request. Include the passing Behave output with the change; repository CI does
+not replace this image-runtime validation.
