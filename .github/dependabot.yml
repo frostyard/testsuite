@@ -13,3 +13,9 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
+    # init and analyze are 2 Dependabot dependencies of 1 action release; they
+    # must move to the same version in 1 pull request.
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
