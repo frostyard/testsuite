@@ -3,6 +3,9 @@
 # behave and pytest come from the distribution packages `python3-behave` and
 # `python3-pytest`, which the distribution and the images update, so there is
 # no pip manifest here.
+# Each entry has 1 group with `patterns: ["*"]`, so each entry opens at most 1
+# version-update pull request for each run (ADR-0075). The group has no
+# `applies-to`, so security updates stay 1 pull request each.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -14,8 +17,9 @@ updates:
       prefix: "ci"
       include: "scope"
     # init and analyze are 2 Dependabot dependencies of 1 action release; they
-    # must move to the same version in 1 pull request.
+    # must move to the same version in 1 pull request. The catch-all group
+    # keeps the init and analyze updates of 1 codeql-action release in 1 pull
+    # request too.
     groups:
-      codeql-action:
-        patterns:
-          - "github/codeql-action*"
+      actions:
+        patterns: ["*"]
