@@ -14,8 +14,11 @@ workflows does it affect? -->
 
 Declare the highest applicable tier, never lower; the scale is
 [docs/risk-tiers.md](https://github.com/frostyard/testsuite/blob/main/docs/risk-tiers.md) (Low, Medium, High). A `risk:high`
-label (a path in `.github/risk-paths.json`) means High: name each matched path
-and why the change is safe, and give the rollback or safe-disable step.
+label (a path in `.github/risk-paths.json` at level L1 or L2) means High: name
+each matched path and why the change is safe, and give the rollback or
+safe-disable step. The caller of core's `pr-triage` workflow also adds 1 level
+label, `level:L1` to `level:L4`, and removes `ready-for-human` when the head
+commit moves.
 
 - Tier: Low / Medium / High
 - Rationale:

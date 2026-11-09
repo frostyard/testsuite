@@ -1,56 +1,70 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "default_level": "L3",
   "paths": [
     {
       "glob": ".github/risk-paths.json",
+      "level": "L2",
       "why": "governance: the high-risk path list"
     },
     {
       "glob": ".github/workflows/**",
-      "why": "governance: CI, the risk-paths caller and token permissions"
+      "level": "L2",
+      "why": "governance: CI, core's pr-triage caller and token permissions"
     },
     {
       "glob": "Makefile",
+      "level": "L2",
       "why": "governance: the verify gate"
     },
     {
       "glob": "scripts/check-template.mjs",
+      "level": "L2",
       "why": "governance: the template verification gate"
     },
     {
       "glob": "scripts/check-corrections.mjs",
+      "level": "L2",
       "why": "governance: the corrections validation gate"
     },
     {
       "glob": "scripts/lib/**",
+      "level": "L2",
       "why": "governance: the vendored risk-path validator and matcher"
     },
     {
       "glob": "mise.toml",
+      "level": "L2",
       "why": "governance: the tool pins that CI installs (supply chain)"
     },
     {
       "glob": "mise.lock",
+      "level": "L2",
       "why": "governance: the checksums of the tools that CI installs (supply chain)"
     },
     {
       "glob": "policies/**",
+      "level": "L2",
       "why": "governance: the repository policy files and their checkers"
     },
     {
       "glob": "tests/shared/**",
+      "level": "L2",
       "why": "governance: shared probes and step vocabulary that every suite uses to gate images in lab; risk tier High in docs/risk-tiers.md"
     },
     {
       "glob": "tests/**/environment.py",
+      "level": "L2",
       "why": "governance: suite hooks that gate variants"
     },
     {
       "glob": "tests/smoke/features/steps/smoke_steps.py",
+      "level": "L2",
       "why": "governance: the empirical EXPECTED_CONTAINER_FAILURES allowlist"
     },
     {
       "glob": ".claude/settings.json",
+      "level": "L2",
       "why": "governance: agent permission rules"
     }
   ]

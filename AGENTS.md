@@ -25,9 +25,12 @@ This file is the canonical instruction file. `CLAUDE.md`, `GEMINI.md`,
   test that fails without the fix, or a rule here when no test can catch it,
   plus 1 line in `.memory/corrections.jsonl` (ADR-0018; `make verify` validates
   it).
-- A path in `.github/risk-paths.json` gives the pull request the `risk:high`
-  label. Do not remove that label to make a pull request ready: the change
-  leaves the pull request, with the reason in it.
+- A path in `.github/risk-paths.json` gives the pull request 1 level label,
+  `level:L1` to `level:L4`, and the `risk:high` label at L1 and L2 (core
+  ADR-0078). Do not remove `risk:high` to make a pull request ready: the change
+  leaves the pull request, with the reason in it. Core's `pr-triage` workflow,
+  which the caller runs, also removes `ready-for-human` when the head commit
+  moves (core ADR-0077).
 
 ## Docs
 
