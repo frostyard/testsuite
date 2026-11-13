@@ -11,9 +11,10 @@
 #                        suite, the pytest unit suite of tests/unit, and the
 #                        behave feature-discovery check of tests/smoke/features.
 #   make check           the developer gate; the same as verify.
-#   make ci              verify, plus the append-only corrections check
+#   make ci              verify, plus the corrections records check
 #                        against BASE when BASE is set (CI passes the pull
-#                        request base commit).
+#                        request base commit): no record removed or renamed,
+#                        and the old corrections file does not come back.
 #
 # behave and pytest are not pinned here: they come from the Debian or Ubuntu
 # packages `python3-behave` and `python3-pytest`, and behave is 1.2.6, the

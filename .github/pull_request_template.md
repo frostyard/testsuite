@@ -46,4 +46,4 @@ commit moves.
 
 - [ ] No secrets, tokens or credentials are committed
 - [ ] I have checked this change against the [PR review rubric](https://github.com/frostyard/testsuite/blob/main/docs/review-rubric.md)
-- [ ] Blocking review point fixed: guard added and 1 `.memory/corrections.jsonl` line added
+- [ ] Blocking review point fixed: guard added and 1 file added under `.memory/corrections/`
