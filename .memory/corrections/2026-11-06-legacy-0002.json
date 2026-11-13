@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-06",
+  "scope": ".github/risk-paths.json why categories",
+  "correction": "The tool-pin entries copied the template's 'supply chain:' prefix, which is not a category of core's risk-paths spec rule B; core's validator checks only the JSON shape, so make verify passed. Every why now starts with a rule B category, and policies/test_risk_paths.py checks the categories and rule C.",
+  "evidence": "Cross-review of frostyard/testsuite PR #83 at e482f207 (gpt-6.1-sol), finding 2; core docs/specs/risk-paths.md rule B",
+  "promoted_to": "policies/test_risk_paths.py"
+}

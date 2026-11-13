@@ -17,14 +17,16 @@ This file is the canonical instruction file. `CLAUDE.md`, `GEMINI.md`,
   (`verify-template`), then the repository policy check, the policy unittests,
   the pytest suite of `tests/unit` and the behave feature-discovery check
   (`verify-python`). `make check` is the same thing, for developers. `make ci`
-  is `verify` plus the append-only corrections check against `BASE`
-  (`make ci BASE=origin/main`).
+  is `verify` plus the corrections records check against `BASE`
+  (`make ci BASE=origin/main`): no record removed or renamed, only an empty
+  `promoted_to` filled, and the old corrections file does not come back.
 - behave and pytest come from the distribution packages `python3-behave` and
   `python3-pytest`; mise pins only Node. No Python comes from pip.
 - A blocking review point adds a guard in the pull request that fixes it: a
   test that fails without the fix, or a rule here when no test can catch it,
-  plus 1 line in `.memory/corrections.jsonl` (ADR-0018; `make verify` validates
-  it).
+  plus 1 record file under `.memory/corrections/` (name
+  `<date>-pr-<N>-<words>.json`; core ADR-0018, ADR-0081; `make verify`
+  validates it).
 - A path in `.github/risk-paths.json` gives the pull request 1 level label,
   `level:L1` to `level:L4`, and the `risk:high` label at L1 and L2 (core
   ADR-0078). Do not remove `risk:high` to make a pull request ready: the change
