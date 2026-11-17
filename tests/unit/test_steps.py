@@ -262,6 +262,30 @@ def test_no_unexpected_failures_reports_new_and_tolerated_units(monkeypatch, con
     assert f"Tolerated (known container limitations):\n  {known}" in message
 
 
+@pytest.mark.parametrize(
+    "unit",
+    # Literal names, not read from the allowlist: removing an entry must fail.
+    ["tpm-udev.path", "tpm-udev.service"],
+)
+def test_no_unexpected_failures_tolerates_forky_container_tpm_units(monkeypatch, context, unit):
+    monkeypatch.setattr(smoke_steps.host, "failed_units", Mock(return_value=[unit]))
+
+    smoke_steps.step_no_unexpected_failures(context)
+
+
+def test_no_unexpected_failures_rejects_xfs_healer_root_instance(monkeypatch, context):
+    # An image defect on the overlay root (frostyard/snosi#1326), not a harness
+    # limitation: it must stay a failure.
+    monkeypatch.setattr(
+        smoke_steps.host,
+        "failed_units",
+        Mock(return_value=["tpm-udev.path", "xfs_healer@-.service"]),
+    )
+
+    with pytest.raises(AssertionError, match="Unexpected failed units:\n  xfs_healer@-.service"):
+        smoke_steps.step_no_unexpected_failures(context)
+
+
 def test_no_unexpected_failures_propagates_inventory_error(monkeypatch, context):
     monkeypatch.setattr(
         smoke_steps.host,

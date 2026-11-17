@@ -44,13 +44,17 @@ EXPECTED_CONTAINER_FAILURES = {
     "systemd-resolved.service",
     "systemd-resolved-monitor.socket",
     "systemd-resolved-varlink.socket",
-    # forky's tpm-udev (4.2) ships a path unit with ConditionVirtualization=
-    # container: it stands in for udev and creates TPM device nodes inside a
-    # container, and it never starts on real hardware. It watches all of /dev
-    # (PathChanged=/dev). Both units failed in the lab's privileged pod, which
-    # sees the host's /dev; under a plain rootless podman run the path stays
-    # active (waiting). Observed on snow:forky, lab run
-    # dev-forky-smoke-snow-m4sfg (2026-11-17).
+    # forky's tpm-udev (4.2.1) ships tpm-udev.path (ConditionVirtualization=
+    # container, so it never starts on real hardware; PathChanged=/dev) and
+    # the static tpm-udev.service it triggers (systemd-tmpfiles --create
+    # tpm-udev.conf: chown/chmod of /dev/tpm*). The lab host has a TPM, and
+    # the privileged podman run puts /dev/tpm0 and /dev/tpmrm0 in the
+    # container's /dev. Every service run exits 0, but the boot-time changes to
+    # /dev retrigger it: 6 starts in about 0.5 s hit the start limit, the
+    # service fails with start-limit-hit and the path unit with
+    # unit-start-limit-hit, and the nodes still end with the tss owner and
+    # mode 0660. A host without a TPM shows no failure. Journal of lab run
+    # dev-forky-tpm-diag-b7btp, snow:forky, 2026-11-17.
     "tpm-udev.path",
     "tpm-udev.service",
 }
