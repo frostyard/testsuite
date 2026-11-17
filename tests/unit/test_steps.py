@@ -262,6 +262,30 @@ def test_no_unexpected_failures_reports_new_and_tolerated_units(monkeypatch, con
     assert f"Tolerated (known container limitations):\n  {known}" in message
 
 
+@pytest.mark.parametrize(
+    "unit",
+    # Literal names, not read from the allowlist: removing an entry must fail.
+    ["tpm-udev.path", "tpm-udev.service"],
+)
+def test_no_unexpected_failures_tolerates_forky_container_tpm_units(monkeypatch, context, unit):
+    monkeypatch.setattr(smoke_steps.host, "failed_units", Mock(return_value=[unit]))
+
+    smoke_steps.step_no_unexpected_failures(context)
+
+
+def test_no_unexpected_failures_rejects_xfs_healer_root_instance(monkeypatch, context):
+    # An image defect on the overlay root (frostyard/snosi#1326), not a harness
+    # limitation: it must stay a failure.
+    monkeypatch.setattr(
+        smoke_steps.host,
+        "failed_units",
+        Mock(return_value=["tpm-udev.path", "xfs_healer@-.service"]),
+    )
+
+    with pytest.raises(AssertionError, match="Unexpected failed units:\n  xfs_healer@-.service"):
+        smoke_steps.step_no_unexpected_failures(context)
+
+
 def test_no_unexpected_failures_propagates_inventory_error(monkeypatch, context):
     monkeypatch.setattr(
         smoke_steps.host,
@@ -294,6 +318,36 @@ def test_os_release_equals_reports_missing_or_different_value(monkeypatch, conte
     with pytest.raises(AssertionError) as error:
         smoke_steps.step_os_release_equals(context, "IMAGE_ID", "snow")
     assert "os-release IMAGE_ID is 'cayo', expected 'snow'" in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "release",
+    [
+        {"VERSION_CODENAME": "trixie", "VERSION_ID": "13"},
+        {"VERSION_CODENAME": "forky", "VERSION_ID": "14"},
+    ],
+)
+def test_supported_debian_release_accepts_known_pairs(monkeypatch, context, release):
+    monkeypatch.setattr(smoke_steps.host, "os_release", Mock(return_value=release))
+
+    smoke_steps.step_os_release_supported_debian(context)
+
+
+@pytest.mark.parametrize(
+    ("release", "message"),
+    [
+        ({"VERSION_ID": "13"}, "VERSION_CODENAME is None, expected one of"),
+        ({"VERSION_CODENAME": "bookworm", "VERSION_ID": "12"}, "VERSION_CODENAME is 'bookworm'"),
+        ({"VERSION_CODENAME": "forky", "VERSION_ID": "13"}, "VERSION_ID is '13', expected '14' for forky"),
+        ({"VERSION_CODENAME": "forky"}, "VERSION_ID is None, expected '14' for forky"),
+        ({"VERSION_CODENAME": "trixie", "VERSION_ID": "1.0"}, "VERSION_ID is '1.0', expected '13' for trixie"),
+    ],
+)
+def test_supported_debian_release_rejects_unknown_or_mismatched(monkeypatch, context, release, message):
+    monkeypatch.setattr(smoke_steps.host, "os_release", Mock(return_value=release))
+
+    with pytest.raises(AssertionError, match=message):
+        smoke_steps.step_os_release_supported_debian(context)
 
 
 @pytest.mark.parametrize("value", ["snow", "0"])

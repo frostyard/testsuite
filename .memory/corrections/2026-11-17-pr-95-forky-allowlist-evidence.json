@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-17",
+  "scope": "smoke EXPECTED_CONTAINER_FAILURES tpm-udev entries and their tests (PR #95)",
+  "correction": "The first version added tpm-udev.path and tpm-udev.service to the container allowlist with only the observation that they failed in the lab, not the cause, and its tests read the allowlist itself or called the new helper directly, so removing the entries or the feature change failed no assertion. A diagnosis run found the cause (the lab host's TPM nodes in the privileged container's /dev retrigger the path unit until the service hits its start limit; each run exits 0), and the comment now states it. New tests pass the literal unit names to the step, keep xfs_healer@-.service a failure, and run identity.feature's steps through behave's step registry against trixie and forky os-release data.",
+  "evidence": "Cross-review of PR #95 at 79c4afa (gpt-6.1-sol), findings 1 and 2. Lab run dev-forky-tpm-diag-b7btp journal: tpm-udev.service 6 starts in about 0.5 s, 'start-limit-hit'; tpm-udev.path 'unit-start-limit-hit'. Revert test: with main's identity.feature and smoke_steps.py, test_identity_feature_accepts_each_snosi_release[forky-14] fails with \"os-release VERSION_CODENAME is 'forky', expected 'trixie'\" and test_no_unexpected_failures_tolerates_forky_container_tpm_units fails with 'Unexpected failed units'.",
+  "promoted_to": "tests/unit/test_identity_feature.py; tests/unit/test_steps.py"
+}

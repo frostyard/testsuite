@@ -44,6 +44,19 @@ EXPECTED_CONTAINER_FAILURES = {
     "systemd-resolved.service",
     "systemd-resolved-monitor.socket",
     "systemd-resolved-varlink.socket",
+    # forky's tpm-udev (4.2.1) ships tpm-udev.path (ConditionVirtualization=
+    # container, so it never starts on real hardware; PathChanged=/dev) and
+    # the static tpm-udev.service it triggers (systemd-tmpfiles --create
+    # tpm-udev.conf: chown/chmod of /dev/tpm*). The lab host has a TPM, and
+    # the privileged podman run puts /dev/tpm0 and /dev/tpmrm0 in the
+    # container's /dev. Every service run exits 0, but the boot-time changes to
+    # /dev retrigger it: 6 starts in about 0.5 s hit the start limit, the
+    # service fails with start-limit-hit and the path unit with
+    # unit-start-limit-hit, and the nodes still end with the tss owner and
+    # mode 0660. A host without a TPM shows no failure. Journal of lab run
+    # dev-forky-tpm-diag-b7btp, snow:forky, 2026-11-17.
+    "tpm-udev.path",
+    "tpm-udev.service",
 }
 
 
@@ -69,6 +82,31 @@ def step_os_release_equals(context, key, expected):
     assert key in values, f"/etc/os-release has no {key} (keys: {sorted(values)})"
     assert values[key] == expected, (
         f"os-release {key} is {values[key]!r}, expected {expected!r}"
+    )
+
+
+# The Debian releases snosi builds, as os-release VERSION_CODENAME to
+# VERSION_ID. trixie is the default stream; forky is the opt-in stream, and
+# snosi writes its VERSION_ID (snosi ADR-0037). Add a release here only when
+# snosi publishes images of it.
+SUPPORTED_DEBIAN_RELEASES = {
+    "trixie": "13",
+    "forky": "14",
+}
+
+
+@then("os-release names a supported Debian release")
+def step_os_release_supported_debian(context):
+    values = host.os_release()
+    codename = values.get("VERSION_CODENAME")
+    assert codename in SUPPORTED_DEBIAN_RELEASES, (
+        f"os-release VERSION_CODENAME is {codename!r}, expected one of "
+        f"{sorted(SUPPORTED_DEBIAN_RELEASES)}"
+    )
+    expected = SUPPORTED_DEBIAN_RELEASES[codename]
+    assert values.get("VERSION_ID") == expected, (
+        f"os-release VERSION_ID is {values.get('VERSION_ID')!r}, expected "
+        f"{expected!r} for {codename}"
     )
 
 

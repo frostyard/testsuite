@@ -4,10 +4,13 @@ Feature: The image identifies itself correctly
   running on — updex, chairlift, bootc, and third-party installers all branch on
   it. A wrong or missing field breaks them silently rather than loudly.
 
-  Scenario: The image is Debian trixie derived
+  Scenario: The image is derived from a supported Debian release
+    # snosi builds the trixie stream (Debian 13) and the opt-in forky stream
+    # (Debian 14; snosi ADR-0037 writes VERSION_ID="14" because Debian testing
+    # ships none). The codename and VERSION_ID must name the same release:
+    # sysext and sysupdate contracts key off VERSION_ID.
     Then os-release "ID_LIKE" is "debian"
-    And os-release "VERSION_CODENAME" is "trixie"
-    And os-release "VERSION_ID" is "13"
+    And os-release names a supported Debian release
 
   Scenario: The image carries build provenance
     # IMAGE_ID names the variant and IMAGE_VERSION is the mkosi build stamp.
