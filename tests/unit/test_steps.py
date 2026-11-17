@@ -296,6 +296,36 @@ def test_os_release_equals_reports_missing_or_different_value(monkeypatch, conte
     assert "os-release IMAGE_ID is 'cayo', expected 'snow'" in str(error.value)
 
 
+@pytest.mark.parametrize(
+    "release",
+    [
+        {"VERSION_CODENAME": "trixie", "VERSION_ID": "13"},
+        {"VERSION_CODENAME": "forky", "VERSION_ID": "14"},
+    ],
+)
+def test_supported_debian_release_accepts_known_pairs(monkeypatch, context, release):
+    monkeypatch.setattr(smoke_steps.host, "os_release", Mock(return_value=release))
+
+    smoke_steps.step_os_release_supported_debian(context)
+
+
+@pytest.mark.parametrize(
+    ("release", "message"),
+    [
+        ({"VERSION_ID": "13"}, "VERSION_CODENAME is None, expected one of"),
+        ({"VERSION_CODENAME": "bookworm", "VERSION_ID": "12"}, "VERSION_CODENAME is 'bookworm'"),
+        ({"VERSION_CODENAME": "forky", "VERSION_ID": "13"}, "VERSION_ID is '13', expected '14' for forky"),
+        ({"VERSION_CODENAME": "forky"}, "VERSION_ID is None, expected '14' for forky"),
+        ({"VERSION_CODENAME": "trixie", "VERSION_ID": "1.0"}, "VERSION_ID is '1.0', expected '13' for trixie"),
+    ],
+)
+def test_supported_debian_release_rejects_unknown_or_mismatched(monkeypatch, context, release, message):
+    monkeypatch.setattr(smoke_steps.host, "os_release", Mock(return_value=release))
+
+    with pytest.raises(AssertionError, match=message):
+        smoke_steps.step_os_release_supported_debian(context)
+
+
 @pytest.mark.parametrize("value", ["snow", "0"])
 def test_os_release_set_accepts_nonempty_value(monkeypatch, context, value):
     monkeypatch.setattr(

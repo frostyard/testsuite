@@ -44,6 +44,15 @@ EXPECTED_CONTAINER_FAILURES = {
     "systemd-resolved.service",
     "systemd-resolved-monitor.socket",
     "systemd-resolved-varlink.socket",
+    # forky's tpm-udev (4.2) ships a path unit with ConditionVirtualization=
+    # container: it stands in for udev and creates TPM device nodes inside a
+    # container, and it never starts on real hardware. It watches all of /dev
+    # (PathChanged=/dev). Both units failed in the lab's privileged pod, which
+    # sees the host's /dev; under a plain rootless podman run the path stays
+    # active (waiting). Observed on snow:forky, lab run
+    # dev-forky-smoke-snow-m4sfg (2026-11-17).
+    "tpm-udev.path",
+    "tpm-udev.service",
 }
 
 
@@ -69,6 +78,31 @@ def step_os_release_equals(context, key, expected):
     assert key in values, f"/etc/os-release has no {key} (keys: {sorted(values)})"
     assert values[key] == expected, (
         f"os-release {key} is {values[key]!r}, expected {expected!r}"
+    )
+
+
+# The Debian releases snosi builds, as os-release VERSION_CODENAME to
+# VERSION_ID. trixie is the default stream; forky is the opt-in stream, and
+# snosi writes its VERSION_ID (snosi ADR-0037). Add a release here only when
+# snosi publishes images of it.
+SUPPORTED_DEBIAN_RELEASES = {
+    "trixie": "13",
+    "forky": "14",
+}
+
+
+@then("os-release names a supported Debian release")
+def step_os_release_supported_debian(context):
+    values = host.os_release()
+    codename = values.get("VERSION_CODENAME")
+    assert codename in SUPPORTED_DEBIAN_RELEASES, (
+        f"os-release VERSION_CODENAME is {codename!r}, expected one of "
+        f"{sorted(SUPPORTED_DEBIAN_RELEASES)}"
+    )
+    expected = SUPPORTED_DEBIAN_RELEASES[codename]
+    assert values.get("VERSION_ID") == expected, (
+        f"os-release VERSION_ID is {values.get('VERSION_ID')!r}, expected "
+        f"{expected!r} for {codename}"
     )
 
 
