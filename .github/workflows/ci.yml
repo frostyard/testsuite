@@ -1,6 +1,7 @@
-# CI entry (frostyard core ADR-0071 row B12): 1 job `gate` runs `make ci`, the
-# make gate of ADR-0043 and ADR-0044 (template gate, corrections, repository
-# policy, the policy unittests, the pytest unit suite, feature discovery).
+# CI entry (frostyard core ADR-0071 row B12): 1 job `gate` runs the Ruff
+# correctness check of nightly-compliance.yml and `make ci`, the make gate of
+# ADR-0043 and ADR-0044 (template gate, corrections, repository policy, the
+# policy unittests, the pytest unit suite, feature discovery).
 # behave and pytest come from the distribution packages `python3-behave` and
 # `python3-pytest`, so no Python here comes from pip (ADR-0043).
 # ADR-0021: SHA-pinned actions, top-level permissions {}, contents: read only,
@@ -27,6 +28,13 @@ jobs:
           persist-credentials: false
           # check-corrections.mjs --base reads the base commit's copy.
           fetch-depth: 0
+      # Same Ruff correctness check as nightly-compliance.yml, so a pull request
+      # fails on it.
+      - name: Lint Python
+        uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89 # v4.1.0
+        with:
+          args: check --select E,F
+          version: "0.16.2"
       # Node comes from mise.toml and mise.lock (ADR-0043), checksum-verified,
       # the same way a developer's `mise install` does.
       - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7

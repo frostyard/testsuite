@@ -11,7 +11,7 @@ stale.
 
 | Signal | Quality expectation | Live source |
 | --- | --- | --- |
-| Repository CI | The latest `main` run and every pull request pass. | [CI workflow runs](https://github.com/frostyard/testsuite/actions/workflows/ci.yml) |
+| Repository CI | The latest `main` run and every pull request pass the make gate and the Ruff correctness checks. | [CI workflow runs](https://github.com/frostyard/testsuite/actions/workflows/ci.yml) |
 | Repository policy | Required governance, CI, documentation, and test assets satisfy the versioned policy on every pull request. | [`policies/repository.json`](../policies/repository.json) |
 | Nightly compliance | Repository policy, Ruff correctness checks, Python compilation, feature discovery, and CodeQL pass each night; scheduled failures are tracked as bug issues. | [Nightly workflow runs](https://github.com/frostyard/testsuite/actions/workflows/nightly-compliance.yml) |
 | Runtime suites | Behave suites pass against published images; failures are investigated in the lab that exercised the image. | [frostyard/lab workflow runs](https://github.com/frostyard/lab/actions) |
