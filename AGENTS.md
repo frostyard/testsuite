@@ -20,6 +20,9 @@ This file is the canonical instruction file. `CLAUDE.md`, `GEMINI.md`,
   is `verify` plus the corrections records check against `BASE`
   (`make ci BASE=origin/main`): no record removed or renamed, only an empty
   `promoted_to` filled, and the old corrections file does not come back.
+- CI (`ci.yml`) and the nightly also run `ruff check --select E,F` with Ruff
+  0.16.2 (the `Lint Python` step); `policies/test_lint_workflow.py` keeps the
+  2 steps the same. Run it before you push: `make verify` does not run Ruff.
 - behave and pytest come from the distribution packages `python3-behave` and
   `python3-pytest`; mise pins only Node. No Python comes from pip.
 - A blocking review point adds a guard in the pull request that fixes it: a

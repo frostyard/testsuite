@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-17",
+  "scope": "CI lint gate: Ruff correctness check (ruff check --select E,F) in ci.yml and nightly-compliance.yml",
+  "correction": "The Ruff correctness check ran only in the nightly workflow, so PR #95 merged 3 E501 lines in tests/unit/test_steps.py and only the next nightly failed. ci.yml now runs the same Lint Python step (same ruff-action SHA, args and Ruff version), and policies/test_lint_workflow.py fails when ci.yml loses the step or its step differs from the nightly step.",
+  "evidence": "Nightly compliance run 44094393378 on 8b6e8d3 failed at Lint Python with E501 at tests/unit/test_steps.py lines 341, 343 and 346 (issue #96). Revert tests: removing the step from ci.yml, or changing only its version or only its SHA, makes policies/test_lint_workflow.py fail.",
+  "promoted_to": "policies/test_lint_workflow.py"
+}

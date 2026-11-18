@@ -338,12 +338,23 @@ def test_supported_debian_release_accepts_known_pairs(monkeypatch, context, rele
     [
         ({"VERSION_ID": "13"}, "VERSION_CODENAME is None, expected one of"),
         ({"VERSION_CODENAME": "bookworm", "VERSION_ID": "12"}, "VERSION_CODENAME is 'bookworm'"),
-        ({"VERSION_CODENAME": "forky", "VERSION_ID": "13"}, "VERSION_ID is '13', expected '14' for forky"),
+        (
+            {"VERSION_CODENAME": "forky", "VERSION_ID": "13"},
+            "VERSION_ID is '13', expected '14' for forky",
+        ),
         ({"VERSION_CODENAME": "forky"}, "VERSION_ID is None, expected '14' for forky"),
-        ({"VERSION_CODENAME": "trixie", "VERSION_ID": "1.0"}, "VERSION_ID is '1.0', expected '13' for trixie"),
+        (
+            {"VERSION_CODENAME": "trixie", "VERSION_ID": "1.0"},
+            "VERSION_ID is '1.0', expected '13' for trixie",
+        ),
     ],
 )
-def test_supported_debian_release_rejects_unknown_or_mismatched(monkeypatch, context, release, message):
+def test_supported_debian_release_rejects_unknown_or_mismatched(
+    monkeypatch,
+    context,
+    release,
+    message,
+):
     monkeypatch.setattr(smoke_steps.host, "os_release", Mock(return_value=release))
 
     with pytest.raises(AssertionError, match=message):
